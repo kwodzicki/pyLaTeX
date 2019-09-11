@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 import os
 from subprocess import Popen, DEVNULL, STDOUT
 
-from LaTeX.LaTeX_2_docx import LaTeX_2_docx
+from pyLaTeX.LaTeX_2_docx import LaTeX_2_docx
 
 def build(inFile, debug = False):
     buildDir = os.path.dirname(inFile)
@@ -43,6 +42,7 @@ def LaTeXDiff(inFile, gitVersion, debug = False):
     build( diff, debug = debug )
 
 def LaTeX_Build_Doc(inFile, gitVersion = None, debug = False):
+    inFile = os.path.realpath( inFile ) 
     build( inFile, debug = debug )
     if gitVersion is not None:
         LaTeXDiff( inFile, gitVersion, debug = debug )
@@ -51,9 +51,3 @@ def LaTeX_Build_Doc(inFile, gitVersion = None, debug = False):
     LaTeX_2_docx( inFile, debug = debug )
 
 
-
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) >= 3:
-        LaTeX_Build_Doc( os.path.realpath(sys.argv[1]), sys.argv[2],
-            debug = len(sys.argv) == 4 )

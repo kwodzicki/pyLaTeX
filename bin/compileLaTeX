@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+import argparse
+from pyLaTeX.LaTeX_Build_Doc import LaTeX_Build_Doc 
+
+parser = argparse.ArgumentParser(description="Compile LaTeX, creating docx version and tracked changes")
+parser.add_argument("texFile",     type=str, help="LaTeX file to compile")
+parser.add_argument("-g", "--git", type=str, help="git branch to use as 'old' file in latexdiff for tracked changes")
+parser.add_argument("--debug",     action='store_true')
+args = parser.parse_args() 
+LaTeX_Build_Doc( args.texFile, args.git, debug = args.debug )

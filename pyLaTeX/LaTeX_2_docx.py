@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os, subprocess;
 from LaTeX_crossref import LaTeX_crossref;
 from getBibFile import getBibFile;
@@ -31,12 +29,3 @@ def LaTeX_2_docx( file, debug = False ):
         print('Pandoc command NOT found!!!');
         code = 127;
     return code;
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description = 'LaTeX_2_DOCX')
-    parser.add_argument('infile', type = str, help = 'Path to .TeX file');
-    parser.add_argument('-d', '--debug', action='store_true', help='Debugging');
-    args = parser.parse_args();
-    status = LaTeX_2_docx( args.infile, debug = args.debug );
-    exit( status );
