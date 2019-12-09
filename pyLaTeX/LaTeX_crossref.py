@@ -69,6 +69,7 @@ def updateCaptions( lines ):
 					if '\\caption{' in lines[lineNum]: capNum = lineNum;                  # If the line contains a caption, save the line number
 				if capNum is not None:
 					caption       = getContents( '\n'.join( lines[capNum:lineNum] ), ('{', '}') );
+					caption       = ''.join(caption)
 					caption       = ['{}\n'.format(line) for line in caption.splitlines() if (line != '')]
 					caption[0]    = '{} {} {}'.format(tag, info[tag]['num'], caption[0])
 					lines[capNum] = '\\caption{' + caption[0]

@@ -8,7 +8,7 @@ with open(ver_path) as ver_file:
 
 setuptools.setup(
   name             = "pyLaTeX",
-  description      = "Package for compiling and converting LaTeX documents" 
+  description      = "Package for compiling and converting LaTeX documents", 
   url              = "",
   author           = "Kyle R. Wodzicki",
   author_email     = "wodzicki@tamu.com",
@@ -16,6 +16,6 @@ setuptools.setup(
   packages         = setuptools.find_packages(),
   install_requires = [ "pandoc" ],
   scripts          = ['bin/LaTeX2docx',
-                      'bin/complieLaTeX']
-  zip_save         = False,
+                      'bin/compileLaTeX'],
+  zip_safe         = False,
 );
