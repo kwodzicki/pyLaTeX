@@ -16,6 +16,8 @@ setuptools.setup(
   packages         = setuptools.find_packages(),
   install_requires = [ "pandoc" ],
   scripts          = ['bin/LaTeX2docx',
+                      'bin/ris2bib',
+                      'bin/refList',
                       'bin/compileLaTeX'],
   zip_safe         = False,
 );
