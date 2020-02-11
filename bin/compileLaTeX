@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 
 import argparse
+from pyLaTeX import log
 from pyLaTeX.LaTeX_Build_Doc import LaTeX_Build_Doc 
 
 parser = argparse.ArgumentParser(description="Compile LaTeX, creating docx version and tracked changes")
 parser.add_argument("texFile",     type=str, help="LaTeX file to compile")
 parser.add_argument("-g", "--git", type=str, help="git branch to use as 'old' file in latexdiff for tracked changes")
+parser.add_argument("--xelatex",   action='store_true', help='Set to compile using xelatex; default is pdflatex')
+parser.add_argument("--loglevel",  type=int, default=30, help='Set logging level')
 parser.add_argument("--debug",     action='store_true')
 args = parser.parse_args() 
-LaTeX_Build_Doc( args.texFile, args.git, debug = args.debug )
+log.handlers[0].setLevel( args.loglevel )
+LaTeX_Build_Doc( args.texFile, gitVersion=args.git, debug = args.debug, xelatex = args.xelatex )

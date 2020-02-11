@@ -1,24 +1,32 @@
+import logging
 import os
 from subprocess import Popen, DEVNULL, STDOUT
 
 from pyLaTeX.utils.build import build
 
-def LaTeXDiff(inFile, gitVersion, debug = False):
-    tmp  = os.path.join('/tmp', '.tmpLaTeX.tex')
-    dir  = os.path.dirname(inFile)
-    base = os.path.basename(inFile)
-    diff = '{}_track_changes{}'.format( *os.path.splitext(inFile) )
-    print( 'Gettting old version...' )
-    with open(tmp, 'w') as fid:
-        proc = Popen( ['git', 'show', '{}:./{}'.format(gitVersion, base) ],
-                    cwd = dir, stdout = fid)
-        proc.wait()
+def LaTeXDiff(inFile, **kwargs):#gitVersion, debug = False):
+  log  = logging.getLogger(__name__)
+  if kwargs.get('gitVersion', None) is None:
+    log.debug('No git version input, skipping LaTeXDiff')
+    return
+  
+  gitVersion = kwargs.get('gitVersion')
+  tmp        = os.path.join('/tmp', '.tmpLaTeX.tex')
+  diff       = '{}_track_changes{}'.format( *os.path.splitext(inFile) )
 
-    print( 'Running LaTeXDiff...' )
-    with open(diff, 'w') as fid:
-        proc = Popen( ['latexdiff', '--append-context2cmd=abstract', tmp, inFile], stdout = fid )
-        proc.wait()
+  fileDir, fileBase  = os.path.split(inFile)
 
-    os.remove( tmp )
-    build( diff, debug = debug )
+  log.info(  'Gettting old version...' )
+  with open(tmp, 'w') as fid:
+    proc = Popen( ['git', 'show', '{}:./{}'.format(gitVersion, fileBase) ],
+                      cwd = fileDir, stdout = fid)
+  proc.wait()
+
+  log.info( 'Running LaTeXDiff...' )
+  with open(diff, 'w') as fid:
+    proc = Popen( ['latexdiff', '--append-context2cmd=abstract', tmp, inFile], stdout = fid )
+    proc.wait()
+
+  os.remove( tmp )
+  build( diff, **kwargs )
 

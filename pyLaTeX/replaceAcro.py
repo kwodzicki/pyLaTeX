@@ -1,10 +1,33 @@
-#!/usr/bin/env python3
-import os, re;
+import logging
+import os
+import regex as re
 
-acroDef = r"\\DeclareAcronym\{([^}]+)\}";      # regex for finding acronym definitions
+ACRODEF  = re.compile( "DeclareAcronym({(?>[^{}]|(?1))*})" )
 cmntSub = r"\%(?!\\).*";                       # regex for finding comments
 acSubs  = [ (r"\\ac\{([^}]+)\}",  '{}  ({})',  '{}', ), 
             (r"\\acp\{([^}]+)\}", '{}s ({}s)', '{}s', ) ];                      # First part of tuple is regex, second is formatter for acro definition, last is formatter for short form
+
+class Acronym(object):
+  def __init__(self, info):
+    self.used  = 0
+    self._data = {}
+    for line in info.replace(',','').splitlines():
+      try:
+        key, val = line.split('=')
+      except:
+        self._data['key'] = line.strip()
+      else:
+        self._data[key.strip()] = val.strip()
+
+  def __getitem__(self, key):
+    return self._data.get(key, None)
+  def __setitem__(self, key, val):
+    self._data[key] = val
+  def __getattr__(self, key):
+    return self._data.get(key, None)
+  def __contains__(self, key):
+    return key in self._data
+
 def parseLine( line ):
   '''
   Purpose:
@@ -45,6 +68,7 @@ class replaceAcro( object ):
         for line in self.lines:
           fid.write( line );
     return outfile;
+
   #########################################
   def subAcros(self):
     if self.acro is None: return None;                                          # If the acro attribute is None, just return
@@ -59,16 +83,17 @@ class replaceAcro( object ):
         tmp = re.search( acSub[0], self.lines[i] );                             # Search for first instance of substitution type
         while tmp is not None:                                                  # While there is a substitution candidate found
           ac = tmp.groups()[0];                                                 # Get text within the {}
-          self.acro[ ac ]['n'] += 1;                                            # Increment the acronym use counter by one (1)
-          if self.acro[ ac ]['n'] == 1:                                         # If this is the first time acronym is used
+          self.acro[ ac ].used += 1;                                            # Increment the acronym use counter by one (1)
+          if self.acro[ ac ].used == 1:                                         # If this is the first time acronym is used
             sub = acSub[1].format(self.acro[ac]['long'],self.acro[ac]['short']);# Set up replacement with long and short forms
           else:                                                                 # Else, is not first time
             sub = acSub[2].format(self.acro[ac]['short']);                      # Set up replacement string
           self.lines[i] = re.sub( 
             acSub[0], lambda _: sub, self.lines[i], count=1
-          );                                                                    # Replace first instance in string; return of lambda function is treated as literal string
+          )                                                                     # Replace first instance in string; return of lambda function is treated as literal string
           tmp = re.search(acSub[0], self.lines[i]);                             # Search for another substitution candidate
-    return any( [self.acro[ac]['n'] > 0 for ac in self.acro] );                 # Return True if there was at least one (1) replacement
+    return any( [self.acro[ac].used > 0 for ac in self.acro] );                 # Return True if there was at least one (1) replacement
+
   #########################################
   def parseAcros(self):
     acro = False;
@@ -78,30 +103,10 @@ class replaceAcro( object ):
         break;
     if not acro:
       return None;
-    else: 
-      acro, n = {}, 0;
-      while n < self.nLines:                                          # Iterate over all lines
-        if 'DeclareAcronym' in self.lines[n]:                         # If acronym declaration is in the line
-          line  = self.lines[n];                                      # Set line to the nth line
-          nOpen = line.count('{') - line.count('}');                  # Get number of open brackets in the line
-          while nOpen > 0:
-            n += 1;
-            line  += self.lines[n]
-            nOpen = line.count('{') - line.count('}');                # Get number of open brackets in the line
-          line = re.sub( cmntSub, '',line );                          # Replace any comments in line with empty string
-          line = line.replace('\t','');                               # Replace any tabs with empty strings
-          tag, line = parseLine( line );
-          tmp1 = {'n' : 0}
-          for i in line.split(','):
-            tmp2 = i.split('=');
-            tmp1[tmp2[0].strip()] = tmp2[1].strip();
-          acro[tag] = tmp1
-        n += 1;
-      return acro;
-
-
-if __name__ == "__main__":
-  import sys
-  inst = replaceAcro( sys.argv[1] );
-  inst.subAcros()
-  inst.save();
+    else:
+      acronyms = {}
+      for match in ACRODEF.findall( ''.join(self.lines) ):
+        acro = Acronym( match[1:-2] )
+        if 'key' in acro:
+          acronyms[ acro['key'] ] = acro
+      return acronyms

@@ -1,3 +1,4 @@
+import logging
 import os, re
 from subprocess import Popen, PIPE
 from .LaTeX_crossref import LaTeX_crossref;
@@ -13,7 +14,7 @@ def getAbstract( lines ):
     else:
         return None
 
-def LaTeX_2_docx( file, debug = False ):
+def LaTeX_2_docx( file, **kwargs ):
     filedir = os.path.dirname( os.path.abspath(file) );
     fname, ext = os.path.splitext( file )
     docx    = '{}.docx'.format( fname )
@@ -26,7 +27,7 @@ def LaTeX_2_docx( file, debug = False ):
 
     abstract = getAbstract( lines )
 
-    if debug:   
+    if kwargs.get('debug', False):   
         with open(file + '.txt', 'w') as f:
             for line in lines:
                 f.write( line );
