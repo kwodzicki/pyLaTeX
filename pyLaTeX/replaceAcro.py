@@ -2,7 +2,26 @@ import logging
 import os
 import regex as re
 
-ACRODEF  = re.compile( "DeclareAcronym({(?>[^{}]|(?1))*})" )
+'''
+The ACRODEF regex pattern was found at the following link:
+https://www.regular-expressions.info/refrecurse.html
+
+In words:
+    Recurusion of a capturing group
+    Find the 'DeclareAcronym' string (case-sensitive)
+    Then use the basic pattern b(?>m|(?R))e where b is
+    matching construct, m is what can occur in middle, and
+    e is ending.
+    In this case, m is[^{}], i.e., not one of those characters,
+    or the matching construct. To get around the case where b
+    is all the text preceding the parenthesis, we replace (?R)
+    with (?1), a reference to the first caputure group. This
+    is all placed inside a capture group. 
+
+    Note that this capture group will contain the opening and
+    closing {}, so best to do match[1:-1] to get rid of them
+'''
+ACRODEF  = re.compile( "DeclareAcronym({(?>[^{}]|(?1))*})" ) 
 cmntSub = r"\%(?!\\).*";                       # regex for finding comments
 acSubs  = [ (r"\\ac\{([^}]+)\}",  '{}  ({})',  '{}', ), 
             (r"\\acp\{([^}]+)\}", '{}s ({}s)', '{}s', ) ];                      # First part of tuple is regex, second is formatter for acro definition, last is formatter for short form
@@ -106,7 +125,7 @@ class replaceAcro( object ):
     else:
       acronyms = {}
       for match in ACRODEF.findall( ''.join(self.lines) ):
-        acro = Acronym( match[1:-2] )
+        acro = Acronym( match[1:-1] )
         if 'key' in acro:
           acronyms[ acro['key'] ] = acro
       return acronyms
