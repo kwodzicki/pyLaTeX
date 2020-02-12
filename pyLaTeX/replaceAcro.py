@@ -22,10 +22,10 @@ In words:
     Note that this capture group will contain the opening and
     closing {}, so best to do match[1:-1] to get rid of them
 '''
-ACRODEF  = recursiveRegex( r'\\DeclareAcronym{([^}]*)}', ('{', '}',) )
+ACRODEF  = recursiveRegex( r'\\DeclareAcronym{([^}]*)}', ('{', '}',), group=2 )
 cmntSub = r"\%(?!\\).*";                       # regex for finding comments
-acSubs  = [ (r"\\ac\{([^}]+)\}",  '{}  ({})',  '{}', ), 
-            (r"\\acp\{([^}]+)\}", '{}s ({}s)', '{}s', ) ];                      # First part of tuple is regex, second is formatter for acro definition, last is formatter for short form
+acSubs  = [ (r"\\ac{([^}]+)}",  '{}  ({})',  '{}', ), 
+            (r"\\acp{([^}]+)}", '{}s ({}s)', '{}s', ) ];                      # First part of tuple is regex, second is formatter for acro definition, last is formatter for short form
 
 class Acronym(object):
   def __init__(self, key, info):

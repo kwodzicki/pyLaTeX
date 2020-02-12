@@ -3,7 +3,7 @@ import os, regex
 from subprocess import Popen, DEVNULL, STDOUT
 
 
-def recursiveRegex( qualifier, delimiters ):
+def recursiveRegex( qualifier, delimiters, group = 1 ):
   '''
   Purpose:
     To create a regex pattern for extracting information
@@ -31,8 +31,8 @@ def recursiveRegex( qualifier, delimiters ):
       Note that this capture group will contain the opening and
       closing {}, so best to do match[1:-1] to get rid of them
   '''
-  fmt = "{}({}(?>[^{}{}]|(?1))*{})" 
-  fmt = fmt.format(qualifier, delimiters[0], *delimiters, delimiters[1] )
+  fmt = "{}({}(?>[^{}{}]|(?{}))*{})" 
+  fmt = fmt.format(qualifier, delimiters[0], *delimiters, group, delimiters[1] )
   return regex.compile( fmt )
 
 
