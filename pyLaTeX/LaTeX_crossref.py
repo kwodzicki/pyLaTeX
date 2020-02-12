@@ -84,9 +84,15 @@ def updateCaptions( lines ):
 		lineNum += 1;                                                               # Increment the line number by one (1)
 	return lines;
 
-def LaTeX_crossref( file, returnLines = False ):
-	with open(file, 'r') as f: lines = f.readlines();                             # Read all lines in the file
-
+def LaTeX_crossref( file = None, lines = None, returnLines = False ):
+  if lines is None:
+    if file is None:
+      raise Exception('Must input file path or lines')
+    else:
+	    with open(file, 'r') as f: lines = f.readlines();                             # Read all lines in the file
+  elif isinstance(lines, str):
+    lines = lines.splitlines()
+    
 	lines = updateCaptions( replaceLabels( lines ) );
 	
 	if returnLines:                                                               # If returnLines is set

@@ -2,6 +2,7 @@ import logging
 import os, regex
 from subprocess import Popen, DEVNULL, STDOUT
 
+
 def recursiveRegex( qualifier, delimiters ):
   '''
   Purpose:
@@ -63,6 +64,9 @@ def getBibFile( lines = None, file = None ):
       with open(file, 'r') as f: lines = f.read()                               # Read in all the lines from the file
     else:                                                                       # Else, file is None AND lines is None
       return bibFile;                                                           # Return bibFile, which is None at this point
+  elif isinstance(lines, str):
+    lines = lines.splitlines()
+
   if isinstance(lines, list): lines = ''.join(lines)
   res = recursiveRegex( r"\\bibliography", ("{", "}",) ).findall(lines)
   if len(res) == 1:
@@ -71,4 +75,13 @@ def getBibFile( lines = None, file = None ):
   
   return bibFile
 
+
+def getAbstract( lines ):
+  if isinstance( lines, list): lines = ''.join(lines)
+  pattern  = recursiveRegex( r'\\abstract', ('{','}',) )
+  abstract = absPat.findall( lines )
+  if (len(abstract) == 1):
+    return abstract[0][1:-1].splitlines()
+  else:
+    return None
 

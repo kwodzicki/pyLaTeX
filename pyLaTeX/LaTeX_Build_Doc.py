@@ -1,6 +1,5 @@
 import logging
 import os
-from subprocess import Popen, DEVNULL, STDOUT
 
 from .utils import build 
 from .LaTeX_2_docx import LaTeX_2_docx

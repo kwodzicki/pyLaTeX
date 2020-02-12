@@ -22,20 +22,20 @@ In words:
     Note that this capture group will contain the opening and
     closing {}, so best to do match[1:-1] to get rid of them
 '''
-ACRODEF  = recursiveRegex( r'\\DeclareAcronym', ('{', '}',) )
+ACRODEF  = recursiveRegex( r'\\DeclareAcronym{([^}]*)}', ('{', '}',) )
 cmntSub = r"\%(?!\\).*";                       # regex for finding comments
 acSubs  = [ (r"\\ac\{([^}]+)\}",  '{}  ({})',  '{}', ), 
             (r"\\acp\{([^}]+)\}", '{}s ({}s)', '{}s', ) ];                      # First part of tuple is regex, second is formatter for acro definition, last is formatter for short form
 
 class Acronym(object):
-  def __init__(self, info):
+  def __init__(self, key, info):
     self.used  = 0
-    self._data = {}
-    for line in info.replace(',','').splitlines():
+    self._data = {'key' : key}
+    for line in info[1:-1].replace(',','').splitlines():
       try:
         key, val = line.split('=')
       except:
-        self._data['key'] = line.strip()
+        pass
       else:
         self._data[key.strip()] = val.strip()
 
@@ -126,7 +126,7 @@ class replaceAcro( object ):
     else:
       acronyms = {}
       for match in ACRODEF.findall( ''.join(self.lines) ):
-        acro = Acronym( match[1:-1] )
+        acro = Acronym( *match )
         if 'key' in acro:
           acronyms[ acro['key'] ] = acro
       return acronyms
