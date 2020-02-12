@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os, re
 from pylatexenc.latexencode import unicode_to_latex
 
@@ -104,12 +102,3 @@ def ris2bib( file, outfile = None, mode = 'a' ):
         with open(outfile, mode = mode) as oid:
             oid.write( text )
     return True
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('risfile',      type = str, help='Full path to ris citation file')
-    parser.add_argument('-b', '--bib',  type = str, help='Full path to .bib file to append converted citation to')
-
-    args = parser.parse_args()
-    ris2bib( args.risfile, outfile = args.bib  )
-

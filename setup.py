@@ -14,7 +14,7 @@ setuptools.setup(
   author_email     = "wodzicki@tamu.com",
   version          = main_ns['__version__'],
   packages         = setuptools.find_packages(),
-  install_requires = [ "pandoc", "regex" ],
+  install_requires = [ "pandoc", "regex", "pylatexenc" ],
   scripts          = ['bin/LaTeX2docx',
                       'bin/ris2bib',
                       'bin/refList',

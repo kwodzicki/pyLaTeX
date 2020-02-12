@@ -2,7 +2,7 @@ import logging
 import os, re
 from subprocess import Popen, PIPE
 from .LaTeX_crossref import LaTeX_crossref;
-from .getBibFile import getBibFile;
+from .utils import getBibFile;
 from .replaceAcro import replaceAcro;
 
 absPat = re.compile( r'\\abstract\{([^\[\]]+?)\}' )

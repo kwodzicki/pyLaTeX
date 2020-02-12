@@ -2,9 +2,9 @@ import logging
 import os
 from subprocess import Popen, DEVNULL, STDOUT
 
-from pyLaTeX.utils.build import build 
-from pyLaTeX.LaTeX_2_docx import LaTeX_2_docx
-from pyLaTeX.LaTeXDiff import LaTeXDiff
+from .utils import build 
+from .LaTeX_2_docx import LaTeX_2_docx
+from .LaTeXDiff import LaTeXDiff
 
 def LaTeX_Build_Doc(inFile, **kwargs):#gitVersion = None, debug = False):
   inFile = os.path.realpath( inFile ) 

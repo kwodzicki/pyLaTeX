@@ -2,7 +2,7 @@ import logging
 import os
 from subprocess import Popen, DEVNULL, STDOUT
 
-from pyLaTeX.utils.build import build
+from .utils import build
 
 def LaTeXDiff(inFile, **kwargs):#gitVersion, debug = False):
   log  = logging.getLogger(__name__)

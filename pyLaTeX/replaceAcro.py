@@ -2,6 +2,7 @@ import logging
 import os
 import regex as re
 
+from .utils import recursiveRegex
 '''
 The ACRODEF regex pattern was found at the following link:
 https://www.regular-expressions.info/refrecurse.html
@@ -21,7 +22,7 @@ In words:
     Note that this capture group will contain the opening and
     closing {}, so best to do match[1:-1] to get rid of them
 '''
-ACRODEF  = re.compile( "DeclareAcronym({(?>[^{}]|(?1))*})" ) 
+ACRODEF  = recursiveRegex( r'\\DeclareAcronym', ('{', '}',) )
 cmntSub = r"\%(?!\\).*";                       # regex for finding comments
 acSubs  = [ (r"\\ac\{([^}]+)\}",  '{}  ({})',  '{}', ), 
             (r"\\acp\{([^}]+)\}", '{}s ({}s)', '{}s', ) ];                      # First part of tuple is regex, second is formatter for acro definition, last is formatter for short form
