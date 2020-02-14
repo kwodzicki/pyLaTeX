@@ -2,7 +2,7 @@
 
 import argparse
 from pyLaTeX import log
-from pyLaTeX.LaTeX_Build_Doc import LaTeX_Build_Doc 
+from pyLaTeX.LaTeX import LaTeX
 
 parser = argparse.ArgumentParser(description="Compile LaTeX, creating docx version and tracked changes")
 parser.add_argument("texFile",     type=str, help="LaTeX file to compile")
@@ -13,4 +13,10 @@ parser.add_argument("--loglevel",  type=int, default=30, help='Set logging level
 parser.add_argument("--debug",     action='store_true')
 args = parser.parse_args() 
 log.handlers[0].setLevel( args.loglevel )
-LaTeX_Build_Doc( args.texFile, gitVersion=args.git, debug = args.debug, xelatex = args.xelatex, docx = args.docx )
+
+latex = LaTeX(args.texFile)
+latex.compile( xelatex = args.xelatex )
+latex.trackChanges( gitBranch = args.git, xelatex = args.xelatex )
+if args.docx:
+  latex.toDOCX()
+

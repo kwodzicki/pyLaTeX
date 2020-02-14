@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-from pyLaTeX.LaTeX_2_docx import LaTeX_2_docx
+from pyLaTeX.LaTeX import LaTeX
 
 parser = argparse.ArgumentParser(description = 'LaTeX_2_DOCX')
 parser.add_argument('infile', type = str, help = 'Path to .TeX file');
 parser.add_argument('-d', '--debug', action='store_true', help='Debugging');
-args = parser.parse_args();
-status = LaTeX_2_docx( args.infile, debug = args.debug );
-exit( status );
+args = parser.parse_args()
+LaTeX( args.infile).toDOCX( debug = args.debug )

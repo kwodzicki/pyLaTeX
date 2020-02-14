@@ -56,7 +56,7 @@ class LaTeX( Acronyms ):
     '''
     diff = self._latexDiff( **kwargs )
     if diff:
-      self.compile( infile = diff )
+      self.compile( infile = diff, **kwargs)
 
 
   def toDOCX( self, **kwargs ):
@@ -88,7 +88,7 @@ class LaTeX( Acronyms ):
       code = 127
     return code
 
-  def _latexDiff(self, gitBranch = None, refFile = None):
+  def _latexDiff(self, gitBranch = None, refFile = None, **kwargs):
     '''
     Purpose:
       Method for creating tracked changes using the latexdiff CLI
