@@ -2,12 +2,25 @@
 
 # A python function to replace figure, table, and equation labels with numbers
 import os, re;
+from .utils import recursiveRegex
+
 caption = re.compile(r"\{(([^\{]|\{\})*)\}")
 pattern = re.compile(r"\\label\{([^}]+)\}");
 
-info = {'Figure'   : {'list' : [], 'num' : 1},
-        'Table'    : {'list' : [], 'num' : 1},
-        'equation' : {'list' : [], 'num' : 1}}
+class Float(object):
+    def __init__(self, environ, label):
+        self.tag   = environ
+        self.label = label
+        self.list  = []
+        self.num   = 1
+
+info = [Float('figure',     'Figure'),
+        Float('warpfigure', 'Figure'),
+        Float('table',      'Table'),
+        Float('equation',   'eq')]
+#info = {'Figure'   : {'list' : [], 'num' : 1},
+#        'Table'    : {'list' : [], 'num' : 1},
+#        'equation' : {'list' : [], 'num' : 1}}
 
 def getContents( str, brackets ):
   nBracket = 0;
@@ -35,19 +48,19 @@ def replaceLabels( lines ):
   lineNum, nLines = 0, len(lines);
   while lineNum < nLines:                                                       # While the lineNum variable is less than the number of lines, continue processing
     for tag in info:                                                            # Iterate over all tags in the info dictionary
-      if '\\begin{'+tag.lower()+'}' in lines[lineNum] and '%' not in lines[lineNum]:# If an environment matching tag is beginning in the line
-        while '\\end{'+tag.lower()+'}' not in lines[lineNum]:                   # While the line does NOT contain the end statement for the environment
+      if '\\begin{'+tag.tag+'}' in lines[lineNum] and '%' not in lines[lineNum]:# If an environment matching tag is beginning in the line
+        while '\\end{'+tag.tag+'}' not in lines[lineNum]:                   # While the line does NOT contain the end statement for the environment
           lineNum += 1;                                                         # Increase the line number
           if '\\label{' in lines[lineNum]:                                      # If there is a label command in the line
             label = re.findall(r"\\label\{([^}]+)\}", lines[lineNum]);          # Get the label text
             lines[lineNum] = re.sub(pattern, '', lines[lineNum]);               # Replace the label command with nothing
             if len(label) == 1:                                                 # Check that the label variable is only one (1) element
-              info[tag]['list'].append( (str(info[tag]['num']), label[0]) );    # Append the object number and label tupel to the list under tag in info
-              info[tag]['num'] += 1;                                            # Increase the object number under tag of info by one
+              tag.list.append( (str(tag.num), label[0]) );    # Append the object number and label tupel to the list under tag in info
+              tag.num += 1;                                            # Increase the object number under tag of info by one
     lineNum += 1;                                                               # Increment the line number by one (1)
   for i in range( nLines ):                                                     # Iterate over all lines from file
     for tag in info:                                                            # Iterate over all tags in the info dictionary
-      for label in info[tag]['list']:                                           # Iterate over all labels
+      for label in tag.list:                                           # Iterate over all labels
         if label[1] in lines[i]:                                                # If the label is in the line
           words = lines[i].split();                                             # Split the line on spaces
           for j in range( len(words) ):                                         # Iterate over each word
@@ -55,31 +68,37 @@ def replaceLabels( lines ):
               tmp = words[j].split('}');                                        # Split the word on the '}' character
               words[j] = label[0] + (tmp[1] if len(tmp) == 2 else '');          # Append any trailing information to the object number
           lines[i] = ' '.join(words);                                           # Replace the line with the updated list of words
-  for tag in info: info[tag]['num'] = 1;                                        # Reset numbers in info to one (1)
+  for tag in info: tag.num = 1;                                        # Reset numbers in info to one (1)
   return lines;
 
 def updateCaptions( lines ):
   lineNum, nLines = 0, len(lines);
   while lineNum < nLines:                                                       # While the lineNum variable is less than the number of lines, continue processing
     for tag in info:                                                            # Iterate over all tags in the info dictionary
-      if '\\begin{'+tag.lower()+'}' in lines[lineNum] and '%' not in lines[lineNum]:# If an environment matching tag is beginning in the line
+      if '\\begin{'+tag.tag+'}' in lines[lineNum] and '%' not in lines[lineNum]:# If an environment matching tag is beginning in the line
         capNum = None;
-        while '\\end{'+tag.lower()+'}' not in lines[lineNum]:                   # While the line does NOT contain the end statement for the environment
+        while '\\end{'+tag.tag+'}' not in lines[lineNum]:                   # While the line does NOT contain the end statement for the environment
           lineNum += 1;                                                         # Increase the line number
           if '\\caption{' in lines[lineNum]: capNum = lineNum;                  # If the line contains a caption, save the line number
         if capNum is not None:
-          caption       = getContents( '\n'.join( lines[capNum:lineNum] ), ('{', '}') );
-          caption       = ''.join(caption)
-          caption       = ['{}\n'.format(line) for line in caption.splitlines() if (line != '')]
-          caption[0]    = '{} {} {}'.format(tag, info[tag]['num'], caption[0])
-          lines[capNum] = '\\caption{' + caption[0]
-          if len(caption) == 1:
-            lines[capNum] += '}\n'
-          else:
-            for k in range(1, len(caption)):
-              lines[capNum+k] = caption[k]
-            lines[capNum+k] += '}\n'
-          info[tag]['num'] += 1;                                                # Increase the object number under tag of info by one (1)
+          pattern       = recursiveRegex( r'\\caption', ('{', '}') )
+          origCaption   = pattern.findall( ''.join( lines[capNum:lineNum] ) )[0]
+          caption       = origCaption[1:-1]
+          caption       = caption.splitlines(keepends=True)
+          caption[0]    = '{} {} {}'.format(tag.label, tag.num, caption[0])
+          caption       = '\\caption{{{}}}'.format(''.join(caption))
+          lines         = ''.join(lines)
+          lines         = lines.replace( '\\caption{}'.format(origCaption), caption)
+          lines         = lines.splitlines(keepends=True)
+          nLines        = len(lines)
+#          lines[capNum] = '\\caption{' + caption[0]
+#          if len(caption) == 1:
+#            lines[capNum] += '}\n'
+#          else:
+#            for k in range(1, len(caption)):
+#              lines[capNum+k] = caption[k]
+            #lines[capNum+k] += '}\n'
+          tag.num += 1;                                                # Increase the object number under tag of info by one (1)
           capNum = None;                                                        # Set capNum to None
     lineNum += 1;                                                               # Increment the line number by one (1)
   return lines;

@@ -10,6 +10,7 @@ def LaTeX_Build_Doc(inFile, **kwargs):#gitVersion = None, debug = False):
   build( inFile, **kwargs  )
   LaTeXDiff( inFile, **kwargs )#gitVersion, debug = debug )
     
-  LaTeX_2_docx( inFile, **kwargs )#debug = debug )
+  if kwargs.get('docx', False):
+    LaTeX_2_docx( inFile, **kwargs )#debug = debug )
 
 
