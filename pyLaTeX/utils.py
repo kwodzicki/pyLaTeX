@@ -1,7 +1,10 @@
 import logging
-import os, regex
+import os, re, regex
 from subprocess import Popen, DEVNULL, STDOUT
 
+COMMENT   = regex.compile( r'(?<!\\)(%.*[\n\r]*)' )	# Grab instance of % and all following characters IF the % is NOT preceded by \ (backslash)
+ENVIRON   = r'\\begin{{{}}}((?:(?!\\end{{{}}}).|\n|\r)*)'
+RECURSIVE = r'{}({}(?>[^{}{}]|(?{}))*{})' 
 
 def recursiveRegex( qualifier, delimiters, group = 1 ):
   '''
@@ -35,6 +38,18 @@ def recursiveRegex( qualifier, delimiters, group = 1 ):
   fmt = fmt.format(qualifier, delimiters[0], *delimiters, group, delimiters[1] )
   return regex.compile( fmt )
 
+def getEnvironment( environ ):
+  fmt = ENVIRON.format( environ, environ )
+  try:
+    return regex.compile( fmt )
+  except:
+    return re.compile( fmt )
+def removeComments( text ):
+  '''
+  Inputs:
+    text   : String of all text in document
+  '''
+  return COMMENT.sub( '', text )
 
 def build(inFile, **kwargs):
   log      = logging.getLogger(__name__)
