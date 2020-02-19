@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import argparse
+import signal
+from watchdog.observers import Observer
+from pyLaTeX import log
+from pyLaTeX.autocompile import TeXHandler
+
+
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument('indir', type=str, help='Directory to monitor for file to compile')
+  parser.add_argument('--xelatex', action='store_true', help='Set to use XeLaTeX to compile')
+  parser.add_argument('--loglevel', type=int, default=30)
+  args = parser.parse_args()
+
+  log.handlers[0].setLevel( args.loglevel )
+
+  event_handler = TeXHandler( xelatex = args.xelatex )
+  observer      = Observer()
+  observer.schedule(event_handler, args.indir, recursive=True)
+  observer.start()
+  event_handler.join()
+  observer.stop()
+  observer.join()
+  

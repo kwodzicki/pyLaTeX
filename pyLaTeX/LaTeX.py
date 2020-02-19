@@ -110,7 +110,6 @@ class LaTeX( Acronyms ):
       fid.close()
       refFile = fid.name
     elif not refFile:
-      self.log.error('Must input git branch or reference file!')
       return False
  
     self.log.info('Runing latexdiff')
