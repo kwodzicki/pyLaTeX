@@ -11,6 +11,15 @@ ENVIRONS = [CrossRef('Figure', 'figure', 'warpfigure'),
             CrossRef('Table',  'table'),
             CrossRef('eq',     'equation')]
 
+def auxCheck(auxFile, oldData = None):
+  if os.path.isfile(auxFile):
+    with open(auxFile, 'r') as fid:
+      data = fid.read()
+    if oldData:
+      return data == oldData
+    return data
+  return None
+
 class LaTeX( Acronyms ):
   LATEXDIFF = ['latexdiff', '--append-context2cmd=abstract']
   PDFLATEX  = ['pdflatex',  '-interaction=nonstopmode']
@@ -21,7 +30,8 @@ class LaTeX( Acronyms ):
     if not infile: infile = self.infile
     fileDir, fileBase = os.path.split(    infile )
     auxFile           = os.path.splitext( infile )[0] + '.aux'
-    
+    oldData           = auxCheck( auxFile )
+ 
     if kwargs.get('xelatex', False):
       latex = self.XELATEX + [fileBase]
     else:
@@ -35,13 +45,16 @@ class LaTeX( Acronyms ):
 
     self.log.info('Compiling TeX file: {}'.format(infile) )
     cmds = [latex, bibtex, latex, latex]
-    for cmd in cmds:
+    for i, cmd in enumerate(cmds):
       proc = Popen( cmd, **kwargsCMD )
       proc.wait()
       if proc.returncode != 0:
         self.log.error( 'There was an error compiling: {}'.format(cmd) )
         return False
-
+      elif (i == 0) and auxCheck(auxFile, oldData):
+        self.log.debug('Aux file unchaged, no need for long compile')
+        break
+ 
   def trackChanges(self, **kwargs): 
     '''
     Purpose:
