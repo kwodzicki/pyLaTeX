@@ -2,6 +2,7 @@ import logging
 import os, re, regex
 from subprocess import Popen, DEVNULL, STDOUT
 
+INPUT     = regex.compile( r'((?:\\input|\\include){(\w+)})' )
 COMMENT   = regex.compile( r'(?<!\\)(%.*[\n\r]*)' )	# Grab instance of % and all following characters IF the % is NOT preceded by \ (backslash)
 ENVIRON   = r'\\begin{{{}}}((?:(?!\\end{{{}}}).|\n|\r)*)'
 RECURSIVE = r'{}({}(?>[^{}{}]|(?{}))*{})' 
@@ -44,6 +45,7 @@ def getEnvironment( environ ):
     return regex.compile( fmt )
   except:
     return re.compile( fmt )
+
 def removeComments( text ):
   '''
   Inputs:
@@ -51,26 +53,39 @@ def removeComments( text ):
   '''
   return COMMENT.sub( '', text )
 
-def build(inFile, **kwargs):
-  log      = logging.getLogger(__name__)
-  buildDir = os.path.dirname(inFile)
-  auxFile  = os.path.splitext(inFile)[0] + '.aux'
-  LaTeXCMD = 'xelatex' if kwargs.get('xelatex', False) else 'pdflatex'
-  LaTeXCMD = [LaTeXCMD, '-interaction=nonstopmode', os.path.basename( inFile )]
-  bibTex   = ['bibtex',   os.path.basename( auxFile )]
+def replaceInputs( texFile, text = None ):
+  '''
+  Name:
+    replaceInputs:
+  Purpose:
+    A function to replace any \input{} commands with the
+    text from the inputed file
+  Inputs:
+    texFile  : Full path to tex file
+    text     : text from the tex file
+  Keywords:
+    None.
+  Returns:
+    Updated text
+  '''
+  cwd   = os.path.dirname( texFile )
+  if not text:
+    with open( texFile, 'r' ) as fid:
+      text = fid.read()
 
-  kwargsCMD = {'cwd'    : buildDir,
-               'stdout' : DEVNULL,
-               'stderr' : STDOUT}
-  if kwargs.get('debug', False):
-    kwargsCMD['stdout'] = None
-    kwargsCMD['stderr'] = None
-
-  log.info( 'Compiling TeX file: {}'.format( inFile ) )
-  cmds     = [LaTeXCMD, bibTex, LaTeXCMD, LaTeXCMD]
-  for cmd in cmds:
-    proc = Popen( cmd, **kwargsCMD )
-    proc.wait()
+  insts = INPUT.findall(text)
+  for inst in insts:
+    dirPath, filePath = os.path.split( inst[1] )
+    if not os.path.isabs( dirPath ):
+      dirPath = os.path.join( cwd, dirPath )
+    if not filePath.endswith('.tex'):
+      filePath += '.tex'
+    path = os.path.join( dirPath, filePath )
+    if os.path.isfile( path ):
+      with open(path, 'r') as fid:
+        rText = fid.read()
+      text = text.replace( inst[0], rText ) 
+  return text 
 
 def getBibFile( lines = None, file = None ):
   bibFile = None;                                                               # Initialize bibFile to None

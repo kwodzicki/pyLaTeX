@@ -1,7 +1,7 @@
 import logging
 import os
 
-from .utils import recursiveRegex
+from .utils import recursiveRegex, replaceInputs
 
 class LaTeXBase( object ):
   _infile   = None
@@ -26,7 +26,8 @@ class LaTeXBase( object ):
   def loadFile(self, infile):
     self.infile = infile
     with open(self.infile, 'r') as fid:
-      self._text = fid.read()
+      text = fid.read()
+    self._text = replaceInputs( infile, text )
     return True
 
   def getAbstract(self, text = None):

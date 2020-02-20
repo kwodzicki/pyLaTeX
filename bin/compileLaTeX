@@ -15,8 +15,5 @@ args = parser.parse_args()
 log.handlers[0].setLevel( args.loglevel )
 
 latex = LaTeX(args.texFile)
-latex.compile( xelatex = args.xelatex )
-latex.trackChanges( gitBranch = args.git, xelatex = args.xelatex )
-if args.docx:
-  latex.toDOCX()
+latex.compile( xelatex = args.xelatex, gitBranch = args.git, docx = args.docx)
 

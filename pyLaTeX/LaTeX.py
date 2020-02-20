@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, STDOUT, DEVNULL
 
 from .acronyms import Acronyms
 from .crossref import CrossRef
-from .utils import recursiveRegex, removeComments
+from .utils import recursiveRegex, removeComments 
 
 ENVIRONS = [CrossRef('Figure', 'figure', 'warpfigure'),
             CrossRef('Table',  'table'),
@@ -46,6 +46,7 @@ class LaTeX( Acronyms ):
     self.log.info('Compiling TeX file: {}'.format(infile) )
     cmds = [latex, bibtex, latex, latex]
     for i, cmd in enumerate(cmds):
+      self.log.debug('Running command: {}'.format( cmd ))
       proc = Popen( cmd, **kwargsCMD )
       proc.wait()
       if proc.returncode != 0:
@@ -54,6 +55,10 @@ class LaTeX( Acronyms ):
       elif (i == 0) and auxCheck(auxFile, oldData):
         self.log.debug('Aux file unchaged, no need for long compile')
         break
+
+    self.trackChanges( **kwargs )
+    if kwargs.get('docx', False):
+      self.toDOCX()
  
   def trackChanges(self, **kwargs): 
     '''
@@ -96,8 +101,7 @@ class LaTeX( Acronyms ):
       p2.communicate()
       code = p2.returncode
     except Exception as err:
-      print( err )
-      print('Pandoc command NOT found!!!')
+      self.log.error( err )
       code = 127
     return code
 

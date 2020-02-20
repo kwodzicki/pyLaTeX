@@ -11,12 +11,13 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument('indir', type=str, help='Directory to monitor for file to compile')
   parser.add_argument('--xelatex', action='store_true', help='Set to use XeLaTeX to compile')
+  parser.add_argument("--docx",      action='store_true', help='Set to create a Microsoft Word docx file.')
   parser.add_argument('--loglevel', type=int, default=30)
   args = parser.parse_args()
 
   log.handlers[0].setLevel( args.loglevel )
 
-  event_handler = TeXHandler( xelatex = args.xelatex )
+  event_handler = TeXHandler( xelatex = args.xelatex, docx = args.docx )
   observer      = Observer()
   observer.schedule(event_handler, args.indir, recursive=True)
   observer.start()

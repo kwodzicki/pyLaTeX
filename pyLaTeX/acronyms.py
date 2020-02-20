@@ -4,6 +4,7 @@ import regex as re
 
 from .LaTeXBase import LaTeXBase
 from .utils import recursiveRegex
+
 '''
 The ACRODEF regex pattern was found at the following link:
 https://www.regular-expressions.info/refrecurse.html

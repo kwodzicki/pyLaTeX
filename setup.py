@@ -18,6 +18,7 @@ setuptools.setup(
   scripts          = ['bin/LaTeX2docx',
                       'bin/ris2bib',
                       'bin/refList',
-                      'bin/compileLaTeX'],
+                      'bin/compileLaTeX',
+                      'bin/autoCompile'],
   zip_safe         = False,
 );
