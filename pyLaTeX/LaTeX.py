@@ -30,6 +30,7 @@ class LaTeX( Acronyms ):
     if not infile: infile = self.infile
     fileDir, fileBase = os.path.split(    infile )
     auxFile           = os.path.splitext( infile )[0] + '.aux'
+    self.log.debug( 'Aux file: {}'.format(auxFile) )
     oldData           = auxCheck( auxFile )
  
     if kwargs.get('xelatex', False):
@@ -56,10 +57,6 @@ class LaTeX( Acronyms ):
         self.log.debug('Aux file unchaged, no need for long compile')
         break
 
-    self.trackChanges( **kwargs )
-    if kwargs.get('docx', False):
-      self.toDOCX()
- 
   def trackChanges(self, **kwargs): 
     '''
     Purpose:

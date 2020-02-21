@@ -16,4 +16,7 @@ log.handlers[0].setLevel( args.loglevel )
 
 latex = LaTeX(args.texFile)
 latex.compile( xelatex = args.xelatex, gitBranch = args.git, docx = args.docx)
+latex.trackChanges( xelatex = args.xelatex, gitBranch = args.git )
+if args.docx:
+  latex.toDOCX()
 
