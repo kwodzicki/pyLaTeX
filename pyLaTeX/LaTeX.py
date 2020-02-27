@@ -17,7 +17,7 @@ def auxCheck(auxFile, oldData = None):
       data = fid.read()
     if oldData:
       return data == oldData
-    return data
+    return data 
   return None
 
 class LaTeX( Acronyms ):
@@ -32,7 +32,7 @@ class LaTeX( Acronyms ):
     auxFile           = os.path.splitext( infile )[0] + '.aux'
     self.log.debug( 'Aux file: {}'.format(auxFile) )
     oldData           = auxCheck( auxFile )
- 
+    
     if kwargs.get('xelatex', False):
       latex = self.XELATEX + [fileBase]
     else:
@@ -53,9 +53,12 @@ class LaTeX( Acronyms ):
       if proc.returncode != 0:
         self.log.error( 'There was an error compiling: {}'.format(cmd) )
         return False
-      elif (i == 0) and auxCheck(auxFile, oldData):
+      elif (i == 0) and auxCheck(auxFile, oldData) is True:
         self.log.debug('Aux file unchaged, no need for long compile')
         break
+
+    if kwargs.get('with_bbl', False):
+      self._insertBib()
 
   def trackChanges(self, **kwargs): 
     '''

@@ -1,7 +1,7 @@
 import logging
-import os
+import os, re
 
-from .utils import recursiveRegex, replaceInputs
+from .utils import recursiveRegex, replaceInputs, removeComments
 
 class LaTeXBase( object ):
   _infile   = None
@@ -44,6 +44,38 @@ class LaTeXBase( object ):
       if not bibFile.endswith('.bib'): bibFile += '.bib';                         # If the file path does NOT end wi
       return bibFile
     return None
+
+  def _insertBib(self):
+    '''
+    Purpose:
+      Method to insert the contents of a bbl file into TeX
+      where \\bibliography{} command exists, creating
+      new file with data. Note that all comments are removed
+      in new file
+    Inputs:
+      None.
+    Keywords:
+      None.
+    Outputs:
+      None.  Creates new file though!
+    '''
+    filePath, fileExt = os.path.splitext(self.infile)														# Split extension off file path
+    bblFile = '{}.bbl'.format( filePath )																				# Path to bbl file
+    newFile = '{}_wBBL.tex'.format( filePath )																	# Path to new file with bbl replace
+    if not os.path.isfile( bblFile ):																						# If NO bbl file
+      self.log.error('No bbl file! Cannot replace contents')
+    else:
+      self.log.debug('Reading bbl data from: {}'.format(bblFile))
+      with open(bblFile, 'r') as fid:
+        bblData = fid.read()
+      bblData = bblData.replace('\\', '\\\\')																		# Replace all \\ with \\\\
+
+      text    = removeComments( self._text )																		# Remove comments from original latex data
+      text    = re.sub('\\bibliographystyle{[^}]+}', '',   text	)								# Remove nay bibliographystyle commands
+      text    = re.sub( r'\\bibliography{[^}]+}', bblData, text )								# Replace bibliography command with contents of bbl file
+      self.log.debug('Creating new file: {}'.format(newFile))
+      with open(newFile, 'w') as fid:
+        fid.write( text )
 
   def _pandoc(self, outFile):
     cmd     = ['pandoc', '-f', 'latex', '-t', 'docx']
