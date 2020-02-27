@@ -76,21 +76,23 @@ class LaTeX( Acronyms ):
     if diff:
       self.compile( infile = diff, **kwargs)
 
-
   def exportTo(self, **kwargs):
+    fname, ext = os.path.splitext( self.infile )																# Get extensionless file path
+    text    = removeComments( self._text )																			# Remove comments for
+    bibFile = self.getBibFile(text)																							# Get bibliography file name
+    docx    = '{}.docx'.format( fname ) if kwargs.get('docx',     False) else None
+    md      = '{}.md'.format(   fname ) if kwargs.get('markdown', False) else None
     if md or docx:
-      fname, ext = os.path.splitext( self.infile )																# Get extensionless file path
-      text    = removeComments( self._text )																			# Remove comments for
-      bibFile = self.getBibFile(text)																							# Get bibliography file name
-      docx    = '{}.docx'.format( fname ) if kwargs.get('docx',     False) else None
-      md      = '{}.md'.format(   fname ) if kwargs.get('markdown', False) else None
-
       md = self._toMarkdown(text=text, outFile=md, bibFile=bibFile)
       if docx:
         self._toDOCX(docx, text=md, bibFile=bibFile)
  
   def _toDOCX( self, outFile, **kwargs ):
-    text = kwargs.get('text', self._toMarkdown(**kwargs))
+    self.log.debug('Converting to docx...')
+    text = kwargs.get('text', None)
+    if text is None:
+      text = self._toMarkdown(**kwargs)
+
     kwargs['srcfmt'] = 'markdown'
     pandoc = self._pandoc(outFile=outFile, **kwargs) 
     try:
