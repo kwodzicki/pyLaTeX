@@ -44,10 +44,14 @@ class Acronyms( LaTeXBase ):
     return outfile;
 
   #########################################
-  def subAcros(self):
+  def subAcros(self, text = None):
     if self.acro is None: return None;                                          # If the acro attribute is None, just return
     document = False;                                                           # Check for document actually started; i.e., past preamble
-    lines = self._text.splitlines(True)
+    if text is None:
+      lines = self._text.splitlines(True)
+    else:
+      lines = text.splitlines(True)
+
     for i, line in enumerate(lines):                                            # Iterate over all lines
       if not document:                                                          # If document variable is False
         if 'begin{document}' in line:																						# If check string in line
@@ -66,8 +70,8 @@ class Acronyms( LaTeXBase ):
           line = re.sub( acSub[0], lambda _: sub, line, count=1)                # Replace first instance in string; return of lambda function is treated as literal string
           tmp = re.search(acSub[0], line);																			# Search for another substitution candidate
       lines[i] = line
-    self._text = ''.join(lines)
-    return any( [self.acro[ac]['used'] > 0 for ac in self.acro] );                 # Return True if there was at least one (1) replacement
+    text = ''.join(lines)
+    return text
 
   #########################################
   def _parseAcros(self):

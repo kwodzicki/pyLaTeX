@@ -30,15 +30,36 @@ class LaTeXBase( object ):
     self._text = replaceInputs( infile, text )
     return True
 
-  def getAbstract(self, text = None):
+  def insertAbstract(self, text = None):
     if text is None: text = self._text
     res = recursiveRegex(r'\\abstract', ('{','}',)).findall( text )
     if (len(res) == 1):
-      return res[0][1:-1].splitlines()
+      res  = res[0][1:-1]
+      sub  = r'\\begin{document}'
+      text = re.sub(sub+'[\n\r]', sub+r'\n\\section{Abstract}\n'+res, text)
+    return text
+
+  def getTitle(self, text = None):
+    if text is None: 
+      text = removeComments( self._text )
+    res = recursiveRegex(r'\\title', ('{','}',)).findall( text )
+    if (len(res) == 1):
+      return res[0][1:-1]
     return None
 
-  def _getBibFile(self):
-    res = recursiveRegex( r"\\bibliography", ("{", "}",) ).findall(self._text)
+  def getAuthors(self, text = None):
+    if text is None: 
+      text = removeComments(self._text)
+    res = recursiveRegex(r'\\authors', ('{','}',)).findall( text )
+    if (len(res) == 1):
+      res = re.sub( r'\\\w+{[^}]+}', '', res[0][1:-1] )
+      return '; '.join( [i.strip().rstrip() for i in res.split('and')] )
+    return None
+
+  def getBibFile(self, text = None):
+    if text is None:
+      text = removeComments(self._text)
+    res = recursiveRegex( r"\\bibliography", ("{", "}",) ).findall(text)
     if len(res) == 1:
       bibFile = os.path.expandvars( res[0][1:-1] )                                # Convert bib from list to string
       if not bibFile.endswith('.bib'): bibFile += '.bib';                         # If the file path does NOT end wi
@@ -71,14 +92,21 @@ class LaTeXBase( object ):
       bblData = bblData.replace('\\', '\\\\')																		# Replace all \\ with \\\\
 
       text    = removeComments( self._text )																		# Remove comments from original latex data
-      text    = re.sub('\\bibliographystyle{[^}]+}', '',   text	)								# Remove nay bibliographystyle commands
-      text    = re.sub( r'\\bibliography{[^}]+}', bblData, text )								# Replace bibliography command with contents of bbl file
+      text    = re.sub( r'\\bibliographystyle{[^}]+}', '',      text )								# Remove nay bibliographystyle commands
+      text    = re.sub( r'\\bibliography{[^}]+}',      bblData, text )								# Replace bibliography command with contents of bbl file
       self.log.debug('Creating new file: {}'.format(newFile))
       with open(newFile, 'w') as fid:
         fid.write( text )
 
-  def _pandoc(self, outFile):
-    cmd     = ['pandoc', '-f', 'latex', '-t', 'docx']
-    bibFile = self._getBibFile() 
-    if bibFile: cmd += ['--bibliography', bibFile]
-    return cmd + ['-o', outFile]
+  def _pandoc(self, outFile=None, **kwargs):
+    cmd     = ['pandoc', '--from', kwargs.get('srcfmt',  'latex'), 
+                         '--to',   kwargs.get('destfmt', 'docx')]
+    if kwargs.get('bibFile', None):
+      cmd += ['--bibliography', kwargs.get('bibFile')]
+    cmd.append( '-o' )
+    if outFile:
+      cmd.append( outFile )
+    else:
+      cmd.append( '-' )
+    self.log.debug( 'Pandoc cmd: {}'.format(cmd))
+    return cmd 

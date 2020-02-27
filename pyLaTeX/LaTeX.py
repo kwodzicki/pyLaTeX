@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, STDOUT, DEVNULL
 
 from .acronyms import Acronyms
 from .crossref import CrossRef
-from .utils import recursiveRegex, removeComments 
+from .utils import removeComments 
 
 ENVIRONS = [CrossRef('Figure', 'figure', 'warpfigure'),
             CrossRef('Table',  'table'),
@@ -77,33 +77,74 @@ class LaTeX( Acronyms ):
       self.compile( infile = diff, **kwargs)
 
 
-  def toDOCX( self, **kwargs ):
+  def exportTo(self, **kwargs):
+    if md or docx:
+      fname, ext = os.path.splitext( self.infile )																# Get extensionless file path
+      text    = removeComments( self._text )																			# Remove comments for
+      bibFile = self.getBibFile(text)																							# Get bibliography file name
+      docx    = '{}.docx'.format( fname ) if kwargs.get('docx',     False) else None
+      md      = '{}.md'.format(   fname ) if kwargs.get('markdown', False) else None
+
+      md = self._toMarkdown(text=text, outFile=md, bibFile=bibFile)
+      if docx:
+        self._toDOCX(docx, text=md, bibFile=bibFile)
+ 
+  def _toDOCX( self, outFile, **kwargs ):
+    text = kwargs.get('text', self._toMarkdown(**kwargs))
+    kwargs['srcfmt'] = 'markdown'
+    pandoc = self._pandoc(outFile=outFile, **kwargs) 
+    try:
+      p1 = Popen( ['echo', text], stdout=PIPE)
+      p2 = Popen( pandoc, cwd = os.path.dirname(outFile), stdin=p1.stdout)
+      p1.stdout.close()
+      p2.communicate()
+    except Exception as err:
+      self.log.error( err )
+      return False
+    return True
+
+  def _toMarkdown( self, **kwargs ):
+    '''
+    Purpose:
+      Method to convert LaTeX to pandoc markdown format
+    Inputs:
+      None.
+    Keywords:
+      text    : Text to process; default is to used text from file
+      outFile : Path to output file for saving data; default
+                 is to not write data to disk
+    Outputs:
+      Returns string containing converted text
+    '''
     fileDir = os.path.dirname( self.infile );
-    fname, ext = os.path.splitext( self.infile )
-    docx    = '{}.docx'.format( fname )
-    md      = '{}.md'.format(   fname )
-    text    = removeComments( self._text )
+    text    = kwargs.get('text', removeComments( self._text ))
     for env in ENVIRONS:
       text = env.process(text)
 
-    self.subAcros()
-  
-    abstract = self.getAbstract( text )
-  
-    if kwargs.get('debug', False):
-      with open(self.infile + '.txt', 'w') as fid:
-        fid.write( text );    
+    text     = self.subAcros(   text )
+    text     = self.insertAbstract(text)
+    title    = self.getTitle(   text ) 
+    authors  = self.getAuthors( text )
+    metadata = '%{}\n%{}\n\n'.format(title, authors)
 
+    outFile = kwargs.pop('outFile', None)
+    kwargs['destfmt'] = 'markdown'
+    pandoc = self._pandoc(**kwargs)
     try:
       p1 = Popen( ['echo', text], stdout=PIPE)
-      p2 = Popen( self._pandoc(docx), cwd = fileDir, stdin=p1.stdout)
+      p2 = Popen( pandoc, cwd = fileDir, stdin=p1.stdout, stdout=PIPE)
       p1.stdout.close()
+      stdout = p2.stdout.read()
       p2.communicate()
       code = p2.returncode
     except Exception as err:
       self.log.error( err )
-      code = 127
-    return code
+      return None
+    stdout  = metadata + stdout.decode()
+    if outFile is not None:
+      with open(outFile, 'w') as fid:
+        fid.write( stdout )
+    return stdout
 
   def _latexDiff(self, gitBranch = None, refFile = None, **kwargs):
     '''
@@ -145,4 +186,3 @@ class LaTeX( Acronyms ):
     else:
       self.log.error('There was an error running latexdiff')
       return False
- 

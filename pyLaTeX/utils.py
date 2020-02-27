@@ -86,32 +86,3 @@ def replaceInputs( texFile, text = None ):
         rText = fid.read()
       text = text.replace( inst[0], rText ) 
   return text 
-
-def getBibFile( lines = None, file = None ):
-  bibFile = None;                                                               # Initialize bibFile to None
-  if lines is None:                                                             # If lines is None
-    if file is not None:                                                        # If file is not None
-      with open(file, 'r') as f: lines = f.read()                               # Read in all the lines from the file
-    else:                                                                       # Else, file is None AND lines is None
-      return bibFile;                                                           # Return bibFile, which is None at this point
-  elif isinstance(lines, str):
-    lines = lines.splitlines()
-
-  if isinstance(lines, list): lines = ''.join(lines)
-  res = recursiveRegex( r"\\bibliography", ("{", "}",) ).findall(lines)
-  if len(res) == 1:
-    bibFile = os.path.expandvars( res[0][1:-1] )                                # Convert bib from list to string and expand all path variables
-    if not bibFile.endswith('.bib'): bibFile += '.bib';                         # If the file path does NOT end with .bib, then append .bib
-  
-  return bibFile
-
-
-def getAbstract( lines ):
-  if isinstance( lines, list): lines = ''.join(lines)
-  pattern  = recursiveRegex( r'\\abstract', ('{','}',) )
-  abstract = absPat.findall( lines )
-  if (len(abstract) == 1):
-    return abstract[0][1:-1].splitlines()
-  else:
-    return None
-
