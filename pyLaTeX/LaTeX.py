@@ -1,5 +1,5 @@
 import logging
-import os
+import os, re
 import tempfile
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 
@@ -33,11 +33,13 @@ class LaTeX( Acronyms ):
     self.log.debug( 'Aux file: {}'.format(auxFile) )
     oldData           = auxCheck( auxFile )
     
-    if kwargs.get('xelatex', False):
-      latex = self.XELATEX + [fileBase]
-    else:
-      latex = self.PDFLATEX + [fileBase]
-    bibtex = self.BIBTEX + [os.path.basename(auxFile)]
+    if kwargs.get('xelatex', False):                                            # If the xelatex keyword is set
+      latex = self.XELATEX + [fileBase]                                         # Use xelatex
+    elif re.search('{fontspec}|{mathspec}', self._text) is not None:            # Else, if {fontspec} or {mathspec} found in text
+      latex = self.XELATEX + [fileBase]                                         # Use xelatex
+    else:                                                                       # Else
+      latex = self.PDFLATEX + [fileBase]                                        # Use pdf latex
+    bibtex = self.BIBTEX + [os.path.basename(auxFile)]                          # Set bibtex command
 
     kwargsCMD = {'cwd' : fileDir, 'stdout' : DEVNULL, 'stderr' : STDOUT}    
     if kwargs.get('debug', False):

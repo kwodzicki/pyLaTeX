@@ -3,13 +3,14 @@
 import os
 import argparse
 from subprocess import call, check_output
+from pyLaTeX.version import __version__
 
 parser = argparse.ArgumentParser(description='Create reference list using BibTeX file.')
 parser.add_argument('-s', '--bibStyle', type=str, default='plain', help='Bibliography style to use')
 parser.add_argument('-C', '--Class',    type=str, default='article', help='Set document class')
 parser.add_argument('bibFile',          type=str, help='Path to .bib file to use.')
 parser.add_argument('key',              type=str, nargs='+', help='Key(s) to cite')
-
+parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 args    = parser.parse_args()
 bibFile = os.path.splitext( args.bibFile )[0]
 tmpDir  = os.path.join('/', 'tmp', 'LaTeX_Ref_tmp')

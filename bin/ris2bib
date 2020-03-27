@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from pyLaTeX.version import __version__
 from pyLaTeX.ris2bib import ris2bib
 
 if __name__ == "__main__":
@@ -7,7 +8,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('risfile',      type = str, help='Full path to ris citation file')
     parser.add_argument('-b', '--bib',  type = str, help='Full path to .bib file to append converted citation to')
-
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     args = parser.parse_args()
     ris2bib( args.risfile, outfile = args.bib  )
 

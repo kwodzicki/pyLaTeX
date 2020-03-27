@@ -2,6 +2,7 @@
 
 import argparse
 from pyLaTeX import log
+from pyLaTeX.version import __version__
 from pyLaTeX.LaTeX import LaTeX
 
 parser = argparse.ArgumentParser(description="Compile LaTeX, creating docx version and tracked changes")
@@ -13,6 +14,8 @@ parser.add_argument("--markdown",  action='store_true', help='Set to create a Ma
 parser.add_argument("--docx",      action='store_true', help='Set to create a Microsoft Word docx file.') 
 parser.add_argument("--loglevel",  type=int, default=30, help='Set logging level')
 parser.add_argument("--debug",     action='store_true')
+parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+
 args = parser.parse_args() 
 log.handlers[0].setLevel( args.loglevel )
 
