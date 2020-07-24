@@ -9,6 +9,12 @@ This package was originally written to be a LaTeX to DOCX converter; however, it
 
 ## Best Practices
 
+### Root LaTeX File
+
+You can specify the root TeX file to compile by using the `% !TEX root = /path/to/root` variable at the top of a LaTeX file.
+This is useful if you have a multifile document, such as a book or thesis.
+Defining the `!TEX root` variable allows the compiler to location and compile the correct document as any 'child' documents will not have the proper `\documentclass` command.
+
 ### Inline Math
 
 When writing inline math, it is best to use the `\( \)` notation.
