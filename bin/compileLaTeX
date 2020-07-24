@@ -1,0 +1,26 @@
+#!/usr/bin/env python
+
+import argparse
+from pyLaTeX import log
+from pyLaTeX.version import __version__
+from pyLaTeX.LaTeX import LaTeX
+
+parser = argparse.ArgumentParser(description="Compile LaTeX, creating docx version and tracked changes")
+parser.add_argument("texFile",     type=str, help="LaTeX file to compile")
+parser.add_argument("-g", "--git", type=str, help="git branch to use as 'old' file in latexdiff for tracked changes")
+parser.add_argument("--xelatex",   action='store_true', help='Set to compile using xelatex; default is pdflatex')
+parser.add_argument("--with-bbl",  action='store_true', help='Set to create copy of tex file with contents of BBL file inserted. Note that this version will NOT contain comments') 
+parser.add_argument("--markdown",  action='store_true', help='Set to create a Markdown file.') 
+parser.add_argument("--docx",      action='store_true', help='Set to create a Microsoft Word docx file.') 
+parser.add_argument("--loglevel",  type=int, default=30, help='Set logging level')
+parser.add_argument("--debug",     action='store_true')
+parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+
+args = parser.parse_args() 
+log.handlers[0].setLevel( args.loglevel )
+
+latex = LaTeX(args.texFile)
+latex.compile( xelatex = args.xelatex, with_bbl = args.with_bbl)
+latex.trackChanges( xelatex = args.xelatex, gitBranch = args.git )
+latex.exportTo( docx = args.docx, markdown = args.markdown )
+
