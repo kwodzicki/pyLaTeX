@@ -3,6 +3,8 @@ import os, re
 
 from .utils import recursiveRegex, replaceInputs, removeComments
 
+TEXROOT_PATTERN = re.compile( r"\!TEX root\s*=\s*(.*)" )
+
 class LaTeXBase( object ):
   _infile   = None
   _text     = None
@@ -25,9 +27,9 @@ class LaTeXBase( object ):
 
   def loadFile(self, infile):
     self.infile = infile
-    with open(self.infile, 'r') as fid:
-      text = fid.read()
-    self._text = replaceInputs( infile, text )
+    text = self._findRoot( )
+    self._text = replaceInputs( self.infile, text )
+
     return True
 
   def insertAbstract(self, text = None):
@@ -66,20 +68,66 @@ class LaTeXBase( object ):
       return bibFile
     return None
 
+  def _findRoot(self):
+    """
+    Determine full path to TeX root file
+
+    Looks for existance of '!TEX root = ...' in the self.infile
+    defined. If the TEX root variable is defined, then that path
+    is parsed in attempt to locate root document and the root
+    document is compiled.
+
+    Arguments:
+      None.
+
+    Keyword arguments:
+      None.
+
+    Returns:
+      str: Text of the source document
+    """
+
+    with open(self.infile, 'r') as fid:                                         # Open source file for reading
+      text = fid.read()                                                         # Read in all text
+    rootFile = TEXROOT_PATTERN.findall( text )                                  # Look for the !TEX root pattern
+    if len(rootFile) != 1: return text                                          # If no pattern, or more than one patter found; just return the text of the file
+
+    rootFile = rootFile[0]                                                      # Take first instance of !TEX root pattern
+    if os.path.relpath( rootFile ):                                             # If it is a relative path
+      path = os.path.dirname( self.infile )                                     # Get directory path of the self.infile
+      path = os.path.join( path, rootFile )                                     # Add the relative root path to the self.infile directory path
+      path = os.path.abspath(path)                                              # Get absolute path
+    else:
+      path = os.path.abspath(path)                                              # Else, just get absolute path to be sure
+
+    if path == self.infile:                                                     # If file paths, equal (not likely?) then just return text
+      return text                                                               # Return text
+    else:
+      self.log.info( 'New LaTeX file found: {}'.format(path) )
+      self.infile = path                                                        # Else, update infile path
+      return self._findRoot()                                                   # Recursive call to this method
+
   def _insertBib(self):
-    '''
-    Purpose:
-      Method to insert the contents of a bbl file into TeX
-      where \\bibliography{} command exists, creating
-      new file with data. Note that all comments are removed
-      in new file
-    Inputs:
+    """
+    Method to insert the contents of a bbl file into TeX source
+    
+    Takes contents of the bbl file created when running BibTeX and
+    creates new TeX file with contents of bbl file located where 
+    the \\bibliography{} command existed in the original file.
+    
+    Note:
+      All comments are removed in new file
+
+    Arguments:
       None.
-    Keywords:
+
+    Keyword arguments:
       None.
-    Outputs:
+
+    Returns:
       None.  Creates new file though!
-    '''
+    """
+
     filePath, fileExt = os.path.splitext(self.infile)														# Split extension off file path
     bblFile = '{}.bbl'.format( filePath )																				# Path to bbl file
     newFile = '{}_wBBL.tex'.format( filePath )																	# Path to new file with bbl replace
