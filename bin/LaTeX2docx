@@ -9,4 +9,4 @@ parser.add_argument('infile', type = str, help = 'Path to .TeX file');
 parser.add_argument('-d', '--debug', action='store_true', help='Debugging');
 parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 args = parser.parse_args()
-LaTeX( args.infile).toDOCX( debug = args.debug )
+LaTeX( args.infile).exportTo( docx=True, debug = args.debug )

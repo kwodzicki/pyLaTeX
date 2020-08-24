@@ -61,7 +61,7 @@ class LaTeX( Acronyms ):
       self.log.debug('Running command: {}'.format( cmd ))
       proc = Popen( cmd, **kwargsCMD )
       proc.wait()
-      if proc.returncode != 0:
+      if self.BIBTEX[0] not in cmd and proc.returncode != 0:
         self.log.error( 'There was an error compiling: {}'.format(cmd) )
         return False
       elif (i == 0) and auxCheck(*auxFiles, oldData=oldData) is True:
