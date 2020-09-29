@@ -3,6 +3,7 @@ import os, re
 import tempfile
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 
+from . import VERSIONS
 from .acronyms import Acronyms
 from .crossref import CrossRef
 from .utils import removeComments 
@@ -23,9 +24,19 @@ def auxCheck(*args, oldData = None):
 
 class LaTeX( Acronyms ):
   LATEXDIFF = ['latexdiff', '--append-context2cmd=abstract']
-  PDFLATEX  = ['pdflatex',  '-interaction=nonstopmode']
-  XELATEX   = ['xelatex',   '-interaction=nonstopmode']
+  PDFLATEX  = 'pdflatex'
+  XELATEX   = 'xelatex'
   BIBTEX    = ['bibtex']
+  TEXOPTS   = ['-interaction=nonstopmode'] 
+
+  def _bibtex(self, auxFiles):
+    return [self.BIBTEX + [os.path.basename(aux)] for aux in auxFiles]        # Set bibtex command
+
+  def _call(self, cmd, **kwargs):
+    self.log.debug('Running command: {}'.format( cmd ))
+    proc = Popen( cmd, **kwargs )
+    proc.wait()
+    return proc
 
   def findAuxFiles(self):
     aux = []
@@ -35,41 +46,48 @@ class LaTeX( Acronyms ):
           aux.append( os.path.join( root, item ) )
     return aux
 
-  def compile(self, infile = None, **kwargs):
+  def compile(self, infile = None, texlive = 'Latest', **kwargs):
     if not infile: infile = self.infile
     fileDir, fileBase = os.path.split(    infile )
     auxFiles = self.findAuxFiles()
     self.log.debug( 'Aux file(s): {}'.format(auxFiles) )
     oldData  = auxCheck( *auxFiles )
 
-    if kwargs.get('xelatex', False):                                            # If the xelatex keyword is set
-      latex = self.XELATEX + [fileBase]                                         # Use xelatex
-    elif re.search('{fontspec}|{mathspec}', self._text) is not None:            # Else, if {fontspec} or {mathspec} found in text
-      latex = self.XELATEX + [fileBase]                                         # Use xelatex
-    else:                                                                       # Else
-      latex = self.PDFLATEX + [fileBase]                                        # Use pdf latex
-    bibtex = [self.BIBTEX + [os.path.basename(aux)] for aux in auxFiles]        # Set bibtex command
+    if texlive not in VERSIONS: texlive = 'Latest'
+    path = VERSIONS[texlive]
 
-    kwargsCMD = {'cwd' : fileDir, 'stdout' : DEVNULL, 'stderr' : STDOUT}    
-    if kwargs.get('debug', False):
-      kwargsCMD['stdout'] = None
-      kwargsCMD['stderr'] = None
+    if kwargs.get('xelatex', False):                                            # If the xelatex keyword is set
+      latex = [ os.path.join(path, self.XELATEX)] + self.TEXOPTS + [fileBase]   # Use xelatex
+    elif re.search('{fontspec}|{mathspec}', self._text) is not None:            # Else, if {fontspec} or {mathspec} found in text
+      latex = [ os.path.join(path, self.XELATEX)] + self.TEXOPTS + [fileBase]   # Use xelatex
+    else:                                                                       # Else
+      latex = [ os.path.join(path, self.PDFLATEX)] + self.TEXOPTS + [fileBase]  # Use xelatex
+    bibtex = self._bibtex( auxFiles )                                           # Set bibtex command; if there were no aux files found, this will be empty list
+
+    kwargsCMD = {'cwd' : fileDir, 'stdout' : DEVNULL, 'stderr' : STDOUT}        # Set basic keywords for running command
+    if kwargs.get('debug', False):                                              # If the debug keyword was set
+      kwargsCMD['stdout'] = None                                                # Change stdout so will print for user
+      kwargsCMD['stderr'] = None                                                # Change stderr so will pring for user
 
     self.log.info('Compiling TeX file: {}'.format(infile) )
-    cmds = [latex, *bibtex, latex, latex]
-    for i, cmd in enumerate(cmds):
-      self.log.debug('Running command: {}'.format( cmd ))
-      proc = Popen( cmd, **kwargsCMD )
-      proc.wait()
-      if self.BIBTEX[0] not in cmd and proc.returncode != 0:
-        self.log.error( 'There was an error compiling: {}'.format(cmd) )
-        return False
-      elif (i == 0) and auxCheck(*auxFiles, oldData=oldData) is True:
-        self.log.debug('Aux file(s) unchaged, no need for long compile')
-        break
+    cmds = [latex, *bibtex, latex, latex]                                       # List of commands to run
 
-    if kwargs.get('with_bbl', False):
-      self._insertBib()
+    for i, cmd in enumerate(cmds):                                              # Iterate over list of commands
+      proc = self._call( cmd, **kwargsCMD )                                     # Run a command
+      if self.BIBTEX[0] not in cmd and proc.returncode != 0:                    # If command does NOT contain bibtex and it did NOT finish cleanly
+        self.log.error( 'There was an error compiling: {}'.format(cmd) )        # Log error
+        return False                                                            # Return from method
+      elif (i == 0):                                                            # Else, if is the first command run
+        if auxCheck(*auxFiles, oldData=oldData) is True:                        # Check the aux file data for changes; note that will return False if no aux files existed at begining of compile
+          self.log.debug('Aux file(s) unchaged, no need for long compile')      # Log
+          break                                                                 # Break from loop as no need to keep compiling; not much changed
+        elif len(cmds) == 3:                                                    # Else, if only 3 commands in cmd list, then there were no aux files at start of compile
+          auxFiles = self.findAuxFiles()                                        # Find aux files
+          for bib in self._bibtex(auxFiles):                                    # Generate bibtex commands and iterate over them
+            proc = self._call( bib, **kwargsCMD )                               # Run bibtex command
+
+    if kwargs.get('with_bbl', False):                                           # If the with_bbl keyword is set
+      self._insertBib()                                                         # Insert contents of bbl file into the document
 
   def trackChanges(self, **kwargs): 
     """
