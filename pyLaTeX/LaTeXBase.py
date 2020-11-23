@@ -104,7 +104,7 @@ class LaTeXBase( object ):
     if path == self.infile:                                                     # If file paths, equal (not likely?) then just return text
       return text                                                               # Return text
     else:
-      self.log.info( 'New LaTeX file found: {}'.format(path) )
+      self.log.info( 'Root TeX file found: {}'.format(path) )
       self.infile = path                                                        # Else, update infile path
       return self._findRoot()                                                   # Recursive call to this method
 

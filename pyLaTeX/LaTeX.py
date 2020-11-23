@@ -79,7 +79,7 @@ class LaTeX( Acronyms ):
         return False                                                            # Return from method
       elif (i == 0):                                                            # Else, if is the first command run
         if auxCheck(*auxFiles, oldData=oldData) is True:                        # Check the aux file data for changes; note that will return False if no aux files existed at begining of compile
-          self.log.debug('Aux file(s) unchaged, no need for long compile')      # Log
+          self.log.debug('Aux file(s) unchanged, no need for long compile')     # Log
           break                                                                 # Break from loop as no need to keep compiling; not much changed
         elif len(cmds) == 3:                                                    # Else, if only 3 commands in cmd list, then there were no aux files at start of compile
           auxFiles = self.findAuxFiles()                                        # Find aux files
