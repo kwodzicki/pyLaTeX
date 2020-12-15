@@ -1,9 +1,9 @@
 import logging
 import os, re, regex
-from subprocess import Popen, DEVNULL, STDOUT
+from subprocess import Popen, DEVNULL, STDOUT, PIPE
 
-INPUT     = regex.compile( r'((?:\\input|\\include){(\w+)})' )
-COMMENT   = regex.compile( r'(?<!\\)(%.*[\n\r]*)' )	# Grab instance of % and all following characters IF the % is NOT preceded by \ (backslash)
+INPUT     = regex.compile( r'((?:\\input|\\include){([^\}]+)})' )
+COMMENT   = regex.compile( r'(?<!\\)(%[^\n\r]*)' )	# Grab instance of % and all following characters IF the % is NOT preceded by \ (backslash)
 ENVIRON   = r'\\begin{{{}}}((?:(?!\\end{{{}}}).|\n|\r)*)'
 RECURSIVE = r'{}({}(?>[^{}{}]|(?{}))*{})' 
 
@@ -53,7 +53,7 @@ def removeComments( text ):
   '''
   return COMMENT.sub( '', text )
 
-def replaceInputs( texFile, text = None ):
+def replaceInputs( texFile, text = None, gitBranch = None ):
   '''
   Name:
     replaceInputs:
@@ -64,7 +64,7 @@ def replaceInputs( texFile, text = None ):
     texFile  : Full path to tex file
     text     : text from the tex file
   Keywords:
-    None.
+    gitBranch : The git branch name to pull include/input files from
   Returns:
     Updated text
   '''
@@ -82,7 +82,24 @@ def replaceInputs( texFile, text = None ):
       filePath += '.tex'
     path = os.path.join( dirPath, filePath )
     if os.path.isfile( path ):
-      with open(path, 'r') as fid:
-        rText = fid.read()
+      if gitBranch is None:
+        with open(path, 'r') as fid:
+          rText = fid.read()
+      else:
+        rText = gitShow( gitBranch, path )
       text = text.replace( inst[0], rText ) 
   return text 
+
+def gitShow( gitBranch, infile ):
+  log  = logging.getLogger(__name__)
+  log.info('Getting {} from git branch {}'.format(infile, gitBranch))
+  base = os.path.basename(infile)
+  proc = Popen( ['git', 'show', '{}:./{}'.format(gitBranch, base)], 
+           cwd = os.path.dirname(infile), stdout = PIPE)
+
+  txt = proc.stdout.read().decode()
+
+  proc.wait()
+
+  return removeComments( txt ) 
+

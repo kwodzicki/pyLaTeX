@@ -199,13 +199,11 @@ class LaTeX( Acronyms ):
 
     """
     if gitBranch:
-      self.log.info('Getting old version from git branch: {}'.format(gitBranch) )
-      base = os.path.basename(self.infile)
-      fid  = tempfile.NamedTemporaryFile( suffix='.tex', delete=False )
-      proc = Popen( ['git', 'show', '{}:./{}'.format(gitBranch, base)],
-                    cwd = os.path.dirname(self.infile), stdout = fid)
-      proc.wait()
+      tmp = LaTeX( self.infile, gitBranch = gitBranch )
+      fid = tempfile.NamedTemporaryFile( mode='w', suffix='.tex', delete=False )
+      fid.write( tmp._text )
       fid.close()
+
       refFile = fid.name
     elif not refFile:
       return False
@@ -213,13 +211,19 @@ class LaTeX( Acronyms ):
     self.log.info('Runing latexdiff')
     diff = '{}_track_changes{}'.format( *os.path.splitext(self.infile) )
 
+    fid = tempfile.NamedTemporaryFile( mode='w', suffix='.tex', delete=False )
+    fid.write( self._text )
+    fid.close()
+    newFile = fid.name
     with open(diff, 'w') as fid:
-      proc = Popen( self.LATEXDIFF + [refFile, self.infile], stdout = fid )
+      #proc = Popen( self.LATEXDIFF + [refFile, self.infile], stdout = fid )
+      proc = Popen( self.LATEXDIFF + [refFile, newFile], stdout = fid )
       proc.wait()
 
     if gitBranch:
       self.log.debug('Removing temporary file: {}'.format(refFile) )
       os.remove( refFile )
+      os.remove( newFile )
 
     if proc.returncode == 0:
       return diff

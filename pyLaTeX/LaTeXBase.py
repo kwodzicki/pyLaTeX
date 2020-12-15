@@ -1,17 +1,18 @@
 import logging
 import os, re
 
-from .utils import recursiveRegex, replaceInputs, removeComments
+from .utils import recursiveRegex, replaceInputs, removeComments, gitShow
 
 TEXROOT_PATTERN = re.compile( r"\!TEX root\s*=\s*(.*)" )
 
 class LaTeXBase( object ):
   _infile   = None
   _text     = None
-  def __init__(self, infile):
+  def __init__(self, infile, gitBranch=None):
     self.log = logging.getLogger(__name__)
+    self.gitBranch = gitBranch
     self.loadFile( infile )
-
+   
   @property
   def infile(self):
     return self._infile
@@ -28,7 +29,7 @@ class LaTeXBase( object ):
   def loadFile(self, infile):
     self.infile = infile
     text = self._findRoot( )
-    self._text = replaceInputs( self.infile, text )
+    self._text = replaceInputs( self.infile, text, self.gitBranch )
 
     return True
 
@@ -43,7 +44,8 @@ class LaTeXBase( object ):
 
   def getTitle(self, text = None):
     if text is None: 
-      text = removeComments( self._text )
+      text = self._text
+      #text = removeComments( self._text )
     res = recursiveRegex(r'\\title', ('{','}',)).findall( text )
     if (len(res) == 1):
       return res[0][1:-1]
@@ -51,7 +53,8 @@ class LaTeXBase( object ):
 
   def getAuthors(self, text = None):
     if text is None: 
-      text = removeComments(self._text)
+      text = self._text
+      #text = removeComments(self._text)
     res = recursiveRegex(r'\\authors', ('{','}',)).findall( text )
     if (len(res) == 1):
       res = re.sub( r'\\\w+{[^}]+}', '', res[0][1:-1] )
@@ -60,7 +63,8 @@ class LaTeXBase( object ):
 
   def getBibFile(self, text = None):
     if text is None:
-      text = removeComments(self._text)
+      text = self._text
+      #text = removeComments(self._text)
     res = recursiveRegex( r"\\bibliography", ("{", "}",) ).findall(text)
     if len(res) == 1:
       bibFile = os.path.expandvars( res[0][1:-1] )                                # Convert bib from list to string
@@ -88,10 +92,15 @@ class LaTeXBase( object ):
       str: Text of the source document
     """
 
-    with open(self.infile, 'r') as fid:                                         # Open source file for reading
-      text = fid.read()                                                         # Read in all text
+    if self.gitBranch is None:
+      with open(self.infile, 'r') as fid:                                         # Open source file for reading
+        text = fid.read()                                                         # Read in all text
+    else:
+      text = gitShow( self.gitBranch, self.infile )
+
     rootFile = TEXROOT_PATTERN.findall( text )                                  # Look for the !TEX root pattern
-    if len(rootFile) != 1: return text                                          # If no pattern, or more than one patter found; just return the text of the file
+    if len(rootFile) != 1:
+      return removeComments(text)                                               # If no pattern, or more than one patter found; just return the text of the file
 
     rootFile = rootFile[0]                                                      # Take first instance of !TEX root pattern
     if os.path.relpath( rootFile ):                                             # If it is a relative path
@@ -102,7 +111,7 @@ class LaTeXBase( object ):
       path = os.path.abspath(path)                                              # Else, just get absolute path to be sure
 
     if path == self.infile:                                                     # If file paths, equal (not likely?) then just return text
-      return text                                                               # Return text
+      return removeComments(text)                                               # Return text
     else:
       self.log.info( 'Root TeX file found: {}'.format(path) )
       self.infile = path                                                        # Else, update infile path
@@ -140,7 +149,8 @@ class LaTeXBase( object ):
         bblData = fid.read()
       bblData = bblData.replace('\\', '\\\\')																		# Replace all \\ with \\\\
 
-      text    = removeComments( self._text )																		# Remove comments from original latex data
+      text    = self._text 											# Remove comments from original latex data
+      #text    = removeComments( self._text )																		# Remove comments from original latex data
       text    = re.sub( r'\\bibliographystyle{[^}]+}', '',      text )								# Remove nay bibliographystyle commands
       text    = re.sub( r'\\bibliography{[^}]+}',      bblData, text )								# Replace bibliography command with contents of bbl file
       self.log.debug('Creating new file: {}'.format(newFile))
