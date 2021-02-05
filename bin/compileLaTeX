@@ -21,8 +21,8 @@ parser.add_argument('--version', action='version', version='%(prog)s ' + __versi
 args = parser.parse_args() 
 log.handlers[0].setLevel( args.loglevel )
 
-latex = LaTeX(args.texFile, acros = args.acros)
-latex.compile( xelatex = args.xelatex, with_bbl = args.with_bbl, texlive=args.texlive)
+latex = LaTeX(args.texFile, acros = args.acros, texlive=args.texlive)
+latex.compile( xelatex = args.xelatex, with_bbl = args.with_bbl)
 latex.trackChanges( xelatex = args.xelatex, gitBranch = args.git )
 latex.exportTo( docx = args.docx, markdown = args.markdown )
 

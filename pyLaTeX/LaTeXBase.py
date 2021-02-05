@@ -1,35 +1,52 @@
 import logging
 import os, re
 
+from . import VERSIONS
 from .utils import recursiveRegex, replaceInputs, removeComments, gitShow
 
 TEXROOT_PATTERN = re.compile( r"\!TEX root\s*=\s*(.*)" )
 
 class LaTeXBase( object ):
-  _infile   = None
-  _text     = None
-  def __init__(self, infile, gitBranch=None):
-    self.log = logging.getLogger(__name__)
+  def __init__(self, texfile, gitBranch=None, texlive='Latest'):
+    self._texlive  = 'Latest'
+    self._texfile  = None
+    self._text     = None
+
+    self.log       = logging.getLogger(__name__)
     self.gitBranch = gitBranch
-    self.loadFile( infile )
+    self.texlive   = texlive
+    self.loadFile( texfile )
    
   @property
-  def infile(self):
-    return self._infile
-  @infile.setter
-  def infile(self, val):
+  def texfile(self):
+    return self._texfile
+  @texfile.setter
+  def texfile(self, val):
     if not val:
       raise Exception('Input file not defined')
     elif not os.path.isfile( val ):
       raise Exception('File does not exist')
     elif not val.endswith('.tex'):
       raise Exception('Invalid file exception')
-    self._infile = os.path.abspath( val ) 
+    self._texfile = os.path.abspath( val ) 
 
-  def loadFile(self, infile):
-    self.infile = infile
+  @property
+  def texlive(self):
+    return self._texlive
+  @texlive.setter
+  def texlive(self, val):
+    if isinstance(val, str) and val in VERSIONS:
+      self._texlive = val
+    else:
+      self.log.error( f'Not a valid texlive version: {val}' )
+
+  @property
+  def texpath(self):
+    return VERSIONS[ self._texlive ] 
+  def loadFile(self, texfile):
+    self.texfile = texfile
     text = self._findRoot( )
-    self._text = replaceInputs( self.infile, text, self.gitBranch )
+    self._text = replaceInputs( self.texfile, text, self.gitBranch )
 
     return True
 
@@ -78,7 +95,7 @@ class LaTeXBase( object ):
     """
     Determine full path to TeX root file
 
-    Looks for existance of '!TEX root = ...' in the self.infile
+    Looks for existance of '!TEX root = ...' in the self.texfile
     defined. If the TEX root variable is defined, then that path
     is parsed in attempt to locate root document and the root
     document is compiled.
@@ -94,10 +111,10 @@ class LaTeXBase( object ):
     """
 
     if self.gitBranch is None:
-      with open(self.infile, 'r') as fid:                                         # Open source file for reading
+      with open(self.texfile, 'r') as fid:                                         # Open source file for reading
         text = fid.read()                                                         # Read in all text
     else:
-      text = gitShow( self.gitBranch, self.infile )
+      text = gitShow( self.gitBranch, self.texfile )
 
     rootFile = TEXROOT_PATTERN.findall( text )                                  # Look for the !TEX root pattern
     if len(rootFile) != 1:
@@ -105,17 +122,17 @@ class LaTeXBase( object ):
 
     rootFile = rootFile[0]                                                      # Take first instance of !TEX root pattern
     if os.path.relpath( rootFile ):                                             # If it is a relative path
-      path = os.path.dirname( self.infile )                                     # Get directory path of the self.infile
-      path = os.path.join( path, rootFile )                                     # Add the relative root path to the self.infile directory path
+      path = os.path.dirname( self.texfile )                                     # Get directory path of the self.texfile
+      path = os.path.join( path, rootFile )                                     # Add the relative root path to the self.texfile directory path
       path = os.path.abspath(path)                                              # Get absolute path
     else:
       path = os.path.abspath(path)                                              # Else, just get absolute path to be sure
 
-    if path == self.infile:                                                     # If file paths, equal (not likely?) then just return text
+    if path == self.texfile:                                                    # If file paths, equal (not likely?) then just return text
       return removeComments(text)                                               # Return text
     else:
       self.log.info( 'Root TeX file found: {}'.format(path) )
-      self.infile = path                                                        # Else, update infile path
+      self.texfile = path                                                       # Else, update texfile path
       return self._findRoot()                                                   # Recursive call to this method
 
   def _insertBib(self):
@@ -139,7 +156,7 @@ class LaTeXBase( object ):
       None.  Creates new file though!
     """
 
-    filePath, fileExt = os.path.splitext(self.infile)														# Split extension off file path
+    filePath, fileExt = os.path.splitext(self.texfile)														# Split extension off file path
     bblFile = '{}.bbl'.format( filePath )																				# Path to bbl file
     newFile = '{}_wBBL.tex'.format( filePath )																	# Path to new file with bbl replace
     if not os.path.isfile( bblFile ):																						# If NO bbl file

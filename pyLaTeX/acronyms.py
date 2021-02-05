@@ -5,7 +5,7 @@ import regex as re
 from .LaTeXBase import LaTeXBase
 from .utils import recursiveRegex
 
-'''
+"""
 The ACRODEF regex pattern was found at the following link:
 https://www.regular-expressions.info/refrecurse.html
 
@@ -23,7 +23,8 @@ In words:
 
     Note that this capture group will contain the opening and
     closing {}, so best to do match[1:-1] to get rid of them
-'''
+"""
+
 ACRODEF  = recursiveRegex( r'\\DeclareAcronym{([^}]*)}', ('{', '}',), group=2 )
 cmntSub = r"\%(?!\\).*";                       # regex for finding comments
 acSubs  = [ (r"\\ac{([^}]+)}",  '{}  ({})',  '{}', ), 
@@ -37,7 +38,7 @@ class Acronyms( LaTeXBase ):
 
   #########################################
   def save(self):
-    outfile  = '.'.join( self.infile.split('.')[:-1] );
+    outfile  = '.'.join( self.texfile.split('.')[:-1] );
     outfile += '_NoACRO.tex';
     if not os.path.isfile( outfile ):
       with open(outfile, 'w') as fid:
