@@ -13,6 +13,7 @@ parser.add_argument("--with-bbl",  action='store_true', help='Set to create copy
 parser.add_argument("--markdown",  action='store_true', help='Set to create a Markdown file.') 
 parser.add_argument("--docx",      action='store_true', help='Set to create a Microsoft Word docx file.') 
 parser.add_argument('--texlive',  type=str, help='TeXLive version to use, default is Latest')
+parser.add_argument('--acros',    type=str, help='Path to TeX file containing acronym definitions')
 parser.add_argument("--loglevel",  type=int, default=30, help='Set logging level')
 parser.add_argument("--debug",     action='store_true')
 parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
@@ -20,7 +21,7 @@ parser.add_argument('--version', action='version', version='%(prog)s ' + __versi
 args = parser.parse_args() 
 log.handlers[0].setLevel( args.loglevel )
 
-latex = LaTeX(args.texFile)
+latex = LaTeX(args.texFile, acros = args.acros)
 latex.compile( xelatex = args.xelatex, with_bbl = args.with_bbl, texlive=args.texlive)
 latex.trackChanges( xelatex = args.xelatex, gitBranch = args.git )
 latex.exportTo( docx = args.docx, markdown = args.markdown )

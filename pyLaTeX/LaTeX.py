@@ -8,19 +8,46 @@ from .acronyms import Acronyms
 from .crossref import CrossRef
 from .utils import removeComments 
 
+# Environments for cross referencing
 ENVIRONS = [CrossRef('Figure', 'figure', 'warpfigure'),
             CrossRef('Table',  'table'),
             CrossRef('eq',     'equation')]
 
 def auxCheck(*args, oldData = None):
-  data = {}
-  for auxFile in args:
-    if os.path.isfile(auxFile):
-      with open(auxFile, 'r') as fid:
-        data[auxFile] = fid.read()
-  if oldData:
-    return data == oldData
-  return data 
+  """
+  Check if aux file(s) has changed
+
+  This function will read in all the data from aux files and store
+  the data in a dictionary where keys are the file names/paths and
+  the values are the data.
+
+  If the oldData is used, then the data read in from the aux files
+  is checked against the oldData. If the data are equal, then the
+  aux files have not changed, so there is no need for a long recompile
+
+  Arguments:
+    *args : Any number of paths to auxFiles
+
+  Keyword arguments:
+    oldData (dict): If input, will check if newly read aux file data
+      matches data in the dictionary
+
+  Returns:
+    dict, bool: If the oldData keyword is NOT used, then a dict 
+      containing the data from the aux files is returned. If the
+      oldData keyword IS used, then returns a bool of whether the
+      oldData matches the new data.
+
+  """
+
+  data = {}                                                                     # Dict for storing aux file data
+  for auxFile in args:                                                          # Iterate over all arguments
+    if os.path.isfile(auxFile):                                                 # If the path is a file
+      with open(auxFile, 'r') as fid:                                           # Open file for reading
+        data[auxFile] = fid.read()                                              # Store file data in data dict
+  if isinstance(oldData, dict):                                                 # If oldData is a dict 
+    return data == oldData                                                      # Return bool of whether data and oldData match
+  return data                                                                   # Return data
 
 class LaTeX( Acronyms ):
   LATEXDIFF = ['latexdiff', '--append-context2cmd=abstract']
@@ -126,12 +153,19 @@ class LaTeX( Acronyms ):
     if text is None:
       text = self._toMarkdown(**kwargs)
 
+    fid = tempfile.NamedTemporaryFile( mode='w', suffix='.tex', delete=False )
+    fid.write( text )
+    fid.close()
+
+    tmpFile = fid.name
+
     kwargs['srcfmt'] = 'markdown'
     pandoc = self._pandoc(outFile=outFile, **kwargs) 
     try:
-      p1 = Popen( ['echo', text], stdout=PIPE)
-      p2 = Popen( pandoc, cwd = os.path.dirname(outFile), stdin=p1.stdout)
-      p1.stdout.close()
+      #p1 = Popen( ['echo', text], stdout=PIPE)
+      #p2 = Popen( pandoc, cwd = os.path.dirname(outFile), stdin=p1.stdout)
+      pandoc.append(tmpFile)
+      p2 = Popen( pandoc, cwd = os.path.dirname(outFile) )
       p2.communicate()
     except Exception as err:
       self.log.error( err )
@@ -164,13 +198,18 @@ class LaTeX( Acronyms ):
     authors  = self.getAuthors( text )
     metadata = '%{}\n%{}\n\n'.format(title, authors)
 
+    fid = tempfile.NamedTemporaryFile( mode='w', suffix='.tex', delete=False )
+    fid.write( text )
+    fid.close()
+
+    tmpFile = fid.name
+
     outFile = kwargs.pop('outFile', None)
     kwargs['destfmt'] = 'markdown'
     pandoc = self._pandoc(**kwargs)
     try:
-      p1 = Popen( ['echo', text], stdout=PIPE)
-      p2 = Popen( pandoc, cwd = fileDir, stdin=p1.stdout, stdout=PIPE)
-      p1.stdout.close()
+      pandoc.append( tmpFile )
+      p2 = Popen( pandoc, cwd = fileDir, stdout=PIPE)
       stdout = p2.stdout.read()
       p2.communicate()
       code = p2.returncode

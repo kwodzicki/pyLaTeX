@@ -65,12 +65,13 @@ class LaTeXBase( object ):
     if text is None:
       text = self._text
       #text = removeComments(self._text)
-    res = recursiveRegex( r"\\bibliography", ("{", "}",) ).findall(text)
-    if len(res) == 1:
-      bibFile = os.path.expandvars( res[0][1:-1] )                                # Convert bib from list to string
-      if not bibFile.endswith('.bib'): bibFile += '.bib';                         # If the file path does NOT end wi
-      self.log.debug('Using bib file: {}'.format(bibFile))
-      return bibFile
+    for tmp in ['bibliography', 'bibFile']:
+      res = recursiveRegex( r"\\"+tmp, ("{", "}",) ).findall(text)
+      if len(res) == 1:
+        bibFile = os.path.expandvars( res[0][1:-1] )                                # Convert bib from list to string
+        if not bibFile.endswith('.bib'): bibFile += '.bib';                         # If the file path does NOT end wi
+        self.log.debug('Using bib file: {}'.format(bibFile))
+        return bibFile
     return None
 
   def _findRoot(self):

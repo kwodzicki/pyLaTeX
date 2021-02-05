@@ -31,8 +31,9 @@ acSubs  = [ (r"\\ac{([^}]+)}",  '{}  ({})',  '{}', ),
 
 class Acronyms( LaTeXBase ):
   def __init__(self, *args, **kwargs):
+    acros = kwargs.pop('acros', None)
     super().__init__(*args, **kwargs)
-    self.acro = self._parseAcros()
+    self.acro = self._parseAcros( acros )
 
   #########################################
   def save(self):
@@ -74,23 +75,29 @@ class Acronyms( LaTeXBase ):
     return text
 
   #########################################
-  def _parseAcros(self):
-    acro = False
-    for line in self._text.splitlines():
-      if 'usepackage' and 'acro' in line:
-        acro = True;
-        break;
-    if not acro:
-      return None;
+  def _parseAcros(self, acroFile=None):
+    if acroFile is not None:
+      self.log.debug(f'Using acronym definitions from: {acroFile}')
+      with open(acroFile, 'r') as fid:
+        text = fid.read()
     else:
-      acronyms = {}
-      for acro, info in ACRODEF.findall( self._text ):
-        acronyms[acro] = {'used' : 0}
-        for keyVal in info[1:-1].replace(',','\n').splitlines():
-          try:
-            key, val = keyVal.split('=')
-          except:
-            pass
-          else:
-            acronyms[acro].update( {key.strip() : val.strip()} )
-      return acronyms
+      acro = False
+      for line in self._text.splitlines():
+        if 'usepackage' and 'acro' in line:
+          acro = True;
+          break;
+      if not acro:
+        return None;
+      else:
+        text = self._text
+    acronyms = {}
+    for acro, info in ACRODEF.findall( text ):
+      acronyms[acro] = {'used' : 0}
+      for keyVal in info[1:-1].replace(',','\n').splitlines():
+        try:
+          key, val = keyVal.split('=')
+        except:
+          pass
+        else:
+          acronyms[acro].update( {key.strip() : val.strip()} )
+    return acronyms
