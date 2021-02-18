@@ -37,7 +37,7 @@ class LaTeXBase( object ):
   def texlive(self, val):
     if isinstance(val, str) and val in VERSIONS:
       self._texlive = val
-    else:
+    elif val is not None:
       self.log.error( f'Not a valid texlive version: {val}' )
 
   @property
