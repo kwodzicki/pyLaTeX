@@ -165,27 +165,24 @@ class LaTeX( Acronyms ):
       latex = self.PDFLATEX                                                     # Use pdflatex
     latex += self.TEXOPTS + [fileBase]                                          # Append options and file name
 
-    bibtex = self._bibtex( auxFiles )                                           # Set bibtex command; if there were no aux files found, this will be empty list
-
     kwargsCMD = {'cwd' : fileDir, 'stdout' : DEVNULL, 'stderr' : STDOUT}        # Set basic keywords for running command
     if kwargs.get('debug', False):                                              # If the debug keyword was set
       kwargsCMD['stdout'] = None                                                # Change stdout so will print for user
       kwargsCMD['stderr'] = None                                                # Change stderr so will pring for user
 
     self.log.info( f'Compiling TeX file: {texfile}' )
-    cmds = [latex, *bibtex, latex, latex]                                       # List of commands to run
 
-    for i, cmd in enumerate(cmds):                                              # Iterate over list of commands
-      proc = self._call( cmd, **kwargsCMD )                                     # Run a command
-      if self.BIBTEX[0] not in cmd and proc.returncode != 0:                    # If command does NOT contain bibtex and it did NOT finish cleanly
-        self.log.error( 'There was an error compiling: {}'.format(cmd) )        # Log error
+    for i in range(3):
+      proc = self._call( latex, **kwargsCMD )                                   # Run a command
+      if proc.returncode != 0:                                                  # If command does NOT contain bibtex and it did NOT finish cleanly
+        self.log.error( 'There was an error compiling: {}'.format(latex) )      # Log error
         return False                                                            # Return from method
       elif (i == 0):                                                            # Else, if is the first command run
+        auxFiles = self.findAuxFiles( texfile )                                 # Find aux files
         if auxCheck(*auxFiles, oldData=oldData) is True:                        # Check the aux file data for changes; note that will return False if no aux files existed at begining of compile
           self.log.debug('Aux file(s) unchanged, no need for long compile')     # Log
           break                                                                 # Break from loop as no need to keep compiling; not much changed
-        elif len(cmds) == 3:                                                    # Else, if only 3 commands in cmd list, then there were no aux files at start of compile
-          auxFiles = self.findAuxFiles( texfile )                               # Find aux files
+        else:                                                                   # Else, if only 3 commands in cmd list, then there were no aux files at start of compile
           for bib in self._bibtex(auxFiles):                                    # Generate bibtex commands and iterate over them
             proc = self._call( bib, **kwargsCMD )                               # Run bibtex command
 
@@ -275,7 +272,7 @@ class LaTeX( Acronyms ):
     text     = self.insertAbstract(text)
     title    = self.getTitle(   text ) 
     authors  = self.getAuthors( text )
-    metadata = '%{}\n%{}\n\n'.format(title, authors)
+    metadata = f'%{title}{os.linesep}%{authors}{os.linesep}{os.linesep}'
 
     fid = tempfile.NamedTemporaryFile( mode='w', suffix='.tex', delete=False )
     fid.write( text )
